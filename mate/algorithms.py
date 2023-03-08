@@ -93,11 +93,11 @@ def make(params):
         return mate.MATE(params)
     if algorithm_name == "MATE-TD-T0.5":
         params["mate_mode"] = "td_error"
-        params["token_value"] = 2
+        params["token_value"] = 0.5
         return mate.MATE(params)
     if algorithm_name == "MATE-TD-T0.25":
         params["mate_mode"] = "td_error"
-        params["token_value"] = 3
+        params["token_value"] = 0.25
         return mate.MATE(params)
     if algorithm_name == "MATE-TD-T2":
         params["mate_mode"] = "td_error"
@@ -105,11 +105,29 @@ def make(params):
         return mate.MATE(params)
     if algorithm_name == "MATE-TD-T4":
         params["mate_mode"] = "td_error"
-        params["token_value"] = 3
+        params["token_value"] = 4
         return mate.MATE(params)
     if algorithm_name == "MATE-TD-T8":
         params["mate_mode"] = "td_error"
-        params["token_value"] = 4
+        params["token_value"] = 8
+    if algorithm_name == "MATE-TD-RANDOM":
+        params["mate_mode"] = "td_error"
+        params["token_mode"] = "random"
+        return mate.MATE(params)
+    if algorithm_name == "MATE-TD-RANDOM-B":
+        params["mate_mode"] = "td_error"
+        params["token_mode"] = "random"
+        params["token_range"] = [0.5, 1, 1.5]
+        return mate.MATE(params)
+    if algorithm_name == "MATE-TD-RANDOM-C":
+        params["mate_mode"] = "td_error"
+        params["token_mode"] = "random"
+        params["token_range"] = [0.25, 0.5, 1, 2, 4]
+        return mate.MATE(params)
+    if algorithm_name == "MATE-TD-RANDOM-D":
+        params["mate_mode"] = "td_error"
+        params["token_mode"] = "random"
+        params["token_range"] = [0.25, 0.5, 1, 2, 4, 8]
         return mate.MATE(params)
     if algorithm_name == "MATE-TD-DEFECT_COMPLETE":
         params["mate_mode"] = "td_error"
