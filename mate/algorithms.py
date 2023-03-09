@@ -129,6 +129,10 @@ def make(params):
         params["token_mode"] = "random"
         params["token_range"] = [0.25, 0.5, 1, 2, 4, 8]
         return mate.MATE(params)
+    if algorithm_name == "MATE-TD-EGREEDY":
+        params["mate_mode"] = "td_error"
+        params["token_mode"] = "epsilon-greedy"
+        return mate.MATE(params)
     if algorithm_name == "MATE-TD-DEFECT_COMPLETE":
         params["mate_mode"] = "td_error"
         params["defect_mode"] = mate.DEFECT_ALL
