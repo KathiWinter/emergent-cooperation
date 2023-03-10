@@ -1,5 +1,7 @@
 from mate.utils import get_param_or_default
 from mate.controllers.actor_critic import ActorCritic
+import copy
+import json
 import torch
 import numpy
 import random
@@ -19,7 +21,9 @@ DEFECT_MODES = [NO_DEFECT, DEFECT_ALL, DEFECT_RESPONSE, DEFECT_RECEIVE, DEFECT_S
 
 FIXED_TOKEN = "fixed"
 RANDOM_TOKEN = "random"
-TOKEN_MODES = [FIXED_TOKEN, RANDOM_TOKEN]
+EPSILON_GREEDY = "epsilon-greedy"
+EPSILON_GREEDY_CONT = "epsilon-greedy-cont"
+TOKEN_MODES = [FIXED_TOKEN, RANDOM_TOKEN, EPSILON_GREEDY, EPSILON_GREEDY_CONT]
 
 """
  Mutual Acknowledgment Token Exchange (MATE)
@@ -32,10 +36,17 @@ class MATE(ActorCritic):
         self.mate_mode = get_param_or_default(params, "mate_mode", STATIC_MODE)
         self.token_value = get_param_or_default(params, "token_value", 1)
         self.token_range = get_param_or_default(params, "token_range", [0.5, 1, 2])
-        self.trust_request_matrix = numpy.zeros((self.nr_agents, self.nr_agents), dtype=numpy.int)
-        self.trust_response_matrix = numpy.zeros((self.nr_agents, self.nr_agents), dtype=numpy.int)
+        self.trust_request_matrix = numpy.zeros((self.nr_agents, self.nr_agents), dtype=int)
+        self.trust_response_matrix = numpy.zeros((self.nr_agents, self.nr_agents), dtype=int)
         self.defect_mode = get_param_or_default(params, "defect_mode", NO_DEFECT)
         self.token_mode = get_param_or_default(params, "token_mode", FIXED_TOKEN)
+        self.epsilon = get_param_or_default(params, "epsilon", 0.1)
+        self.cum_rewards = 0
+        self.best_rewards = 0
+        self.initial_value = get_param_or_default(params, "initial_value", 1)
+        self.best_value = copy.copy(self.initial_value)
+        self.last_token_value = 1
+        self.time_step = 0
 
     def can_rely_on(self, agent_id, reward, history, next_history):
         if self.mate_mode == STATIC_MODE:
@@ -58,12 +69,47 @@ class MATE(ActorCritic):
 
     def prepare_transition(self, joint_histories, joint_action, rewards, next_joint_histories, done, info):
         transition = super(MATE, self).prepare_transition(joint_histories, joint_action, rewards, next_joint_histories, done, info)
-        
+
         if self.token_mode == FIXED_TOKEN:
             token_value = self.token_value
         if self.token_mode == RANDOM_TOKEN:
             token_value = random.choice(self.token_range)
- 
+        if self.token_mode == EPSILON_GREEDY:
+            self.cum_rewards += sum(rewards)
+            token_value = self.last_token_value
+            if(self.time_step % 15 == 0):
+                if(self.cum_rewards > self.best_rewards):
+                    self.best_value = self.last_token_value
+                    print(self.best_value)
+                    self.best_rewards = self.cum_rewards
+                self.cum_rewards = 0      
+                p = random.uniform(0, 1)  
+                if p < self.epsilon:
+                    token_value = random.choice([0.25, 0.5, 1, 2, 4])
+                else:                 
+                    token_value = self.best_value
+                self.last_token_value = token_value
+                transition["token_value"] = token_value
+            self.time_step += 1
+        if self.token_mode == EPSILON_GREEDY_CONT:
+            self.cum_rewards += sum(rewards)
+            token_value = self.last_token_value
+            if(self.time_step % 15 == 0):
+                if(self.cum_rewards > self.best_rewards):
+                    self.best_value = self.last_token_value
+                    print(self.best_value)
+                    self.best_rewards = self.cum_rewards
+                self.cum_rewards = 0      
+                p = random.uniform(0, 1)  
+                if p < self.epsilon:
+                    token_value = random.uniform(0.25, 4)
+                else:                 
+                    token_value = self.best_value
+                self.last_token_value = token_value
+                transition["token_value"] = token_value
+            self.time_step += 1
+
+
         original_rewards = [r for r in rewards]
         self.trust_request_matrix[:] = 0
         self.trust_response_matrix[:] = 0

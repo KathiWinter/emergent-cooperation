@@ -129,6 +129,44 @@ def make(params):
         params["token_mode"] = "random"
         params["token_range"] = [0.25, 0.5, 1, 2, 4, 8]
         return mate.MATE(params)
+    if algorithm_name == "MATE-TD-EPSGREEDY":
+        params["mate_mode"] = "td_error"
+        params["token_mode"] = "epsilon-greedy"
+        return mate.MATE(params)
+    if algorithm_name == "MATE-TD-EPSGREEDY-E2":
+        params["mate_mode"] = "td_error"
+        params["token_mode"] = "epsilon-greedy"
+        params["epsilon"] = 0.2
+        return mate.MATE(params)
+    if algorithm_name == "MATE-TD-EPSGREEDY-E3":
+        params["mate_mode"] = "td_error"
+        params["token_mode"] = "epsilon-greedy"
+        params["epsilon"] = 0.3
+        return mate.MATE(params)
+    if algorithm_name == "MATE-TD-EPSGREEDY-E3":
+        params["mate_mode"] = "td_error"
+        params["token_mode"] = "epsilon-greedy"
+        params["epsilon"] = 0.3
+        return mate.MATE(params)
+    if algorithm_name == "MATE-TD-EPSGREEDY-E5":
+        params["mate_mode"] = "td_error"
+        params["token_mode"] = "epsilon-greedy"
+        params["epsilon"] = 0.5
+        return mate.MATE(params)
+    if algorithm_name == "MATE-TD-EPSGREEDY-I025":
+        params["mate_mode"] = "td_error"
+        params["token_mode"] = "epsilon-greedy"
+        params["initial_value"] = 0.25
+        return mate.MATE(params)
+    if algorithm_name == "MATE-TD-EPSGREEDY-I4":
+        params["mate_mode"] = "td_error"
+        params["token_mode"] = "epsilon-greedy"
+        params["initial_value"] = 4
+        return mate.MATE(params)
+    if algorithm_name == "MATE-TD-EPSGREEDY-CONT":
+        params["mate_mode"] = "td_error"
+        params["token_mode"] = "epsilon-greedy-cont"
+        return mate.MATE(params)
     if algorithm_name == "MATE-TD-DEFECT_COMPLETE":
         params["mate_mode"] = "td_error"
         params["defect_mode"] = mate.DEFECT_ALL
