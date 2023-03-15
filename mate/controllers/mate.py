@@ -41,12 +41,11 @@ class MATE(ActorCritic):
         self.defect_mode = get_param_or_default(params, "defect_mode", NO_DEFECT)
         self.token_mode = get_param_or_default(params, "token_mode", FIXED_TOKEN)
         self.epsilon = get_param_or_default(params, "epsilon", 0.1)
-        self.cum_rewards = 0
-        self.best_rewards = 0
         self.initial_value = get_param_or_default(params, "initial_value", 1)
         self.best_value = copy.copy(self.initial_value)
         self.last_token_value = 1
-        self.time_step = 0
+        self.tokens_dict = {}
+
 
     def can_rely_on(self, agent_id, reward, history, next_history):
         if self.mate_mode == STATIC_MODE:
@@ -75,39 +74,32 @@ class MATE(ActorCritic):
         if self.token_mode == RANDOM_TOKEN:
             token_value = random.choice(self.token_range)
         if self.token_mode == EPSILON_GREEDY:
-            self.cum_rewards += sum(rewards)
-            token_value = self.last_token_value
-            if(self.time_step % 15 == 0):
-                if(self.cum_rewards > self.best_rewards):
-                    self.best_value = self.last_token_value
-                    print(self.best_value)
-                    self.best_rewards = self.cum_rewards
-                self.cum_rewards = 0      
-                p = random.uniform(0, 1)  
-                if p < self.epsilon:
-                    token_value = random.choice([0.25, 0.5, 1, 2, 4])
-                else:                 
-                    token_value = self.best_value
-                self.last_token_value = token_value
-                transition["token_value"] = token_value
-            self.time_step += 1
+            if(str(self.last_token_value) in self.tokens_dict):
+                self.tokens_dict[str(self.last_token_value)].append(sum(rewards))
+            else:
+                self.tokens_dict[str(self.last_token_value)] = [sum(rewards)]         
+            self.best_value = float(max(self.tokens_dict, key=self.tokens_dict.get))
+            p = random.uniform(0, 1)  
+            if p < self.epsilon:
+                token_value = random.choice([0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 3, 3.25, 3.5, 3.75, 4])
+            else:                 
+                token_value = self.best_value
+            self.last_token_value = token_value
+            transition["token_value"] = token_value
         if self.token_mode == EPSILON_GREEDY_CONT:
-            self.cum_rewards += sum(rewards)
-            token_value = self.last_token_value
-            if(self.time_step % 15 == 0):
-                if(self.cum_rewards > self.best_rewards):
-                    self.best_value = self.last_token_value
-                    print(self.best_value)
-                    self.best_rewards = self.cum_rewards
-                self.cum_rewards = 0      
-                p = random.uniform(0, 1)  
-                if p < self.epsilon:
-                    token_value = random.uniform(0.25, 4)
-                else:                 
-                    token_value = self.best_value
-                self.last_token_value = token_value
-                transition["token_value"] = token_value
-            self.time_step += 1
+            if(str(self.last_token_value) in self.tokens_dict):
+                self.tokens_dict[str(self.last_token_value)].append(sum(rewards))
+            else:
+                self.tokens_dict[str(self.last_token_value)] = [sum(rewards)]         
+            self.best_value = float(max(self.tokens_dict, key=self.tokens_dict.get))
+            p = random.uniform(0, 1)  
+            if p < self.epsilon:
+                token_value = random.uniform(0,1)
+            else:                 
+                token_value = self.best_value
+            self.last_token_value = token_value
+            transition["token_value"] = token_value
+      
 
 
         original_rewards = [r for r in rewards]
