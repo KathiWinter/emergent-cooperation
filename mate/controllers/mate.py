@@ -78,7 +78,11 @@ class MATE(ActorCritic):
                 self.tokens_dict[str(self.last_token_value)].append(sum(rewards))
             else:
                 self.tokens_dict[str(self.last_token_value)] = [sum(rewards)]         
-            self.best_value = float(max(self.tokens_dict, key=self.tokens_dict.get))
+            mean_values_dict = {}
+            for key, value in self.tokens_dict.items():
+                mean_values_dict[key] = numpy.mean(value)
+                
+            self.best_value = float(max(self.tokens_dict, key=mean_values_dict.get))  
             p = random.uniform(0, 1)  
             if p < self.epsilon:
                 token_value = random.choice([0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 3, 3.25, 3.5, 3.75, 4])
@@ -91,7 +95,11 @@ class MATE(ActorCritic):
                 self.tokens_dict[str(self.last_token_value)].append(sum(rewards))
             else:
                 self.tokens_dict[str(self.last_token_value)] = [sum(rewards)]         
-            self.best_value = float(max(self.tokens_dict, key=self.tokens_dict.get))
+            mean_values_dict = {}
+            for key, value in self.tokens_dict.items():
+                mean_values_dict[key] = numpy.mean(value)
+                
+            self.best_value = float(max(self.tokens_dict, key=mean_values_dict.get))
             p = random.uniform(0, 1)  
             if p < self.epsilon:
                 token_value = random.uniform(0,1)
