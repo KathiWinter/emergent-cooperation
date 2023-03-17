@@ -44,6 +44,7 @@ class MATE(ActorCritic):
         self.initial_value = get_param_or_default(params, "initial_value", 1)
         self.best_value = copy.copy(self.initial_value)
         self.last_token_value = 1
+        self.max_mean = float('-inf')
         self.tokens_dict = {}
 
 
@@ -79,11 +80,11 @@ class MATE(ActorCritic):
             self.tokens_dict[str(self.last_token_value)]['sum_rewards'] += sum(rewards)       
             self.tokens_dict[str(self.last_token_value)]['count'] += 1      
             
-            max_mean = float('-inf')
+            
             for token, stats in self.tokens_dict.items():
                 mean_reward = stats['sum_rewards'] / stats['count']
-                if mean_reward > max_mean:  
-                    max_mean = mean_reward
+                if mean_reward > self.max_mean:  
+                    self.max_mean = mean_reward
                     self.best_value = float(token)
 
             p = random.uniform(0, 1)  
@@ -102,8 +103,8 @@ class MATE(ActorCritic):
             max_mean = float('-inf')
             for token, stats in self.tokens_dict.items():
                 mean_reward = stats['sum_rewards'] / stats['count']
-                if mean_reward > max_mean:  
-                    max_mean = mean_reward
+                if mean_reward > self.max_mean:  
+                    self.max_mean = mean_reward
                     self.best_value = float(token)
 
             p = random.uniform(0, 1)  
