@@ -19,7 +19,7 @@ def run_episode(env, controller, params, training_mode=True):
             transition = controller.update(observations, joint_action, rewards, next_observations, done, info)
             request_messages_sent += transition["request_messages_sent"]
             response_messages_sent += transition["response_messages_sent"]
-            if transition["token_value"] > 0:
+            if transition["token_value"] > 0 and time_step % 100 == 0:
                 token_history.append(transition["token_value"])
         observations = next_observations
     return {
@@ -108,7 +108,7 @@ def run_training(env, controller, params):
         "request_messages_sent": request_messages_sent,
         "response_messages_sent": response_messages_sent,
         "messages_sent": messages_sent,
-        "token_history": token_history[0::100]
+        "token_history": token_history
     }
     if "directory" in params:
         data.save_json(join(params["directory"], "results.json"), result)
