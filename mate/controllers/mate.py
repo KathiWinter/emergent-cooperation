@@ -74,15 +74,18 @@ class MATE(ActorCritic):
         if self.token_mode == RANDOM_TOKEN:
             token_value = random.choice(self.token_range)
         if self.token_mode == EPSILON_GREEDY:
-            if(str(self.last_token_value) in self.tokens_dict):
-                self.tokens_dict[str(self.last_token_value)].append(sum(rewards))
-            else:
-                self.tokens_dict[str(self.last_token_value)] = [sum(rewards)]         
-            mean_values_dict = {}
-            for key, value in self.tokens_dict.items():
-                mean_values_dict[key] = numpy.mean(value)
-                
-            self.best_value = float(max(self.tokens_dict, key=mean_values_dict.get))  
+            if(str(self.last_token_value) not in self.tokens_dict):
+                self.tokens_dict[str(self.last_token_value)] = {'sum_rewards': 0, 'count': 0} 
+            self.tokens_dict[str(self.last_token_value)]['sum_rewards'] += sum(rewards)       
+            self.tokens_dict[str(self.last_token_value)]['count'] += 1      
+            
+            max_mean = float('-inf')
+            for token, stats in self.tokens_dict.items():
+                mean_reward = stats['sum_rewards'] / stats['count']
+                if mean_reward > max_mean:  
+                    max_mean = mean_reward
+                    self.best_value = float(token)
+
             p = random.uniform(0, 1)  
             if p < self.epsilon:
                 token_value = random.choice([0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 3, 3.25, 3.5, 3.75, 4])
@@ -91,15 +94,18 @@ class MATE(ActorCritic):
             self.last_token_value = token_value
             transition["token_value"] = token_value
         if self.token_mode == EPSILON_GREEDY_CONT:
-            if(str(self.last_token_value) in self.tokens_dict):
-                self.tokens_dict[str(self.last_token_value)].append(sum(rewards))
-            else:
-                self.tokens_dict[str(self.last_token_value)] = [sum(rewards)]         
-            mean_values_dict = {}
-            for key, value in self.tokens_dict.items():
-                mean_values_dict[key] = numpy.mean(value)
-                
-            self.best_value = float(max(self.tokens_dict, key=mean_values_dict.get))
+            if(str(self.last_token_value) not in self.tokens_dict):
+                self.tokens_dict[str(self.last_token_value)] = {'sum_rewards': 0, 'count': 0} 
+            self.tokens_dict[str(self.last_token_value)]['sum_rewards'] += sum(rewards)       
+            self.tokens_dict[str(self.last_token_value)]['count'] += 1      
+            
+            max_mean = float('-inf')
+            for token, stats in self.tokens_dict.items():
+                mean_reward = stats['sum_rewards'] / stats['count']
+                if mean_reward > max_mean:  
+                    max_mean = mean_reward
+                    self.best_value = float(token)
+
             p = random.uniform(0, 1)  
             if p < self.epsilon:
                 token_value = random.uniform(0,1)
