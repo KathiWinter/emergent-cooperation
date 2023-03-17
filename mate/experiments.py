@@ -64,7 +64,7 @@ def run_episodes(nr_episodes, env, controller, params, training_mode=True):
         "messages_sent": messages_sent,
         "token_history": token_history
     }
-
+    
 def run_training(env, controller, params):
     episodes_per_epoch = params["episodes_per_epoch"]
     discounted_returns = [[] for _ in range(env.nr_agents)]
@@ -80,7 +80,6 @@ def run_training(env, controller, params):
         print("Finished epoch {} ({}, {}, {} agents):".format(i, params["algorithm_name"], params["domain_name"], params["nr_agents"]))
         print("- Discounted return:  ", result["discounted_returns"], "->", numpy.sum(result["discounted_returns"]))
         print("- Undiscounted return:", result["undiscounted_returns"], "->", numpy.sum(result["undiscounted_returns"]))
-        print("- Token History:", result["token_history"])
         mean_domain_values = result["domain_values"]
         assert len(mean_domain_values) == len(env.domain_values())
         a, b = env.domain_value_debugging_indices()
@@ -109,7 +108,7 @@ def run_training(env, controller, params):
         "request_messages_sent": request_messages_sent,
         "response_messages_sent": response_messages_sent,
         "messages_sent": messages_sent,
-        "token_history": token_history
+        "token_history": token_history[0::100]
     }
     if "directory" in params:
         data.save_json(join(params["directory"], "results.json"), result)
