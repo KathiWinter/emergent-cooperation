@@ -110,9 +110,16 @@ def make(params):
     if algorithm_name == "MATE-TD-T8":
         params["mate_mode"] = "td_error"
         params["token_value"] = 8
+    if algorithm_name == "MATE-TD-T0":
+        params["mate_mode"] = "td_error"
+        params["token_value"] = 0
     if algorithm_name == "MATE-TD-RANDOM":
         params["mate_mode"] = "td_error"
         params["token_mode"] = "random"
+        return mate.MATE(params)
+    if algorithm_name == "MATE-TD-DYNAMIC_TOKEN":
+        params["mate_mode"] = "td_error"
+        params["token_mode"] = "dynamic-token"
         return mate.MATE(params)
     if algorithm_name == "MATE-TD-RANDOM-B":
         params["mate_mode"] = "td_error"
@@ -167,6 +174,10 @@ def make(params):
     if algorithm_name == "MATE-TD-EPSGREEDY-CONT":
         params["mate_mode"] = "td_error"
         params["token_mode"] = "epsilon-greedy-cont"
+        return mate.MATE(params)
+    if algorithm_name == "MATE-TD-META":
+        params["mate_mode"] = "td_error"
+        params["token_mode"] = "meta-policy"
         return mate.MATE(params)
     if algorithm_name == "MATE-TD-DEFECT_COMPLETE":
         params["mate_mode"] = "td_error"
