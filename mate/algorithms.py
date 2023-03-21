@@ -110,9 +110,11 @@ def make(params):
     if algorithm_name == "MATE-TD-T8":
         params["mate_mode"] = "td_error"
         params["token_value"] = 8
+        return mate.MATE(params)
     if algorithm_name == "MATE-TD-T0":
         params["mate_mode"] = "td_error"
         params["token_value"] = 0
+        return mate.MATE(params)
     if algorithm_name == "MATE-TD-RANDOM":
         params["mate_mode"] = "td_error"
         params["token_mode"] = "random"
