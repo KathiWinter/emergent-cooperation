@@ -22,10 +22,10 @@ DEFECT_MODES = [NO_DEFECT, DEFECT_ALL, DEFECT_RESPONSE, DEFECT_RECEIVE, DEFECT_S
 FIXED_TOKEN = "fixed"
 RANDOM_TOKEN = "random"
 EPSILON_GREEDY = "epsilon-greedy"
-EPSILON_GREEDY_CONT = "epsilon-greedy-cont"
+UCB = "ucb"
 DYNAMIC_TOKEN = "dynamic-token"
 META = "meta-policy"
-TOKEN_MODES = [FIXED_TOKEN, RANDOM_TOKEN, EPSILON_GREEDY, EPSILON_GREEDY_CONT, META, DYNAMIC_TOKEN]
+TOKEN_MODES = [FIXED_TOKEN, RANDOM_TOKEN, EPSILON_GREEDY, UCB, META, DYNAMIC_TOKEN]
 
 """
  Mutual Acknowledgment Token Exchange (MATE)
@@ -43,7 +43,7 @@ class MATE(ActorCritic):
         self.defect_mode = get_param_or_default(params, "defect_mode", NO_DEFECT)
         self.token_mode = get_param_or_default(params, "token_mode", FIXED_TOKEN)
         self.epsilon = get_param_or_default(params, "epsilon", 0.9)
-        self.initial_value = get_param_or_default(params, "initial_value", 3.0)
+        self.initial_value = get_param_or_default(params, "initial_value", random.choice([0.25, 0.5, 1.0, 2.0, 4.0]))
         self.best_value = copy.copy(self.initial_value)
         self.last_token_value = self.initial_value
         self.tokens_dict = {}
@@ -89,46 +89,56 @@ class MATE(ActorCritic):
             token_value = random.choice(self.token_range)
         if self.token_mode == DYNAMIC_TOKEN:
             token_value = numpy.zeros(self.nr_agents)
+        if self.token_mode == UCB:
+            self.step += 1
+            max_upper_bound = 0
+            if(str(self.last_token_value) not in self.tokens_dict):
+                self.tokens_dict[str(self.last_token_value)] = {'sum_rewards': 0, 'count': 0} 
+            self.tokens_dict[str(self.last_token_value)]['sum_rewards'] += sum(rewards)
+            self.tokens_dict[str(self.last_token_value)]['count'] += 1    
+            token_value = self.last_token_value
+            if True:
+                for token, stats in self.tokens_dict.items():
+                    if(stats['count'] != 0):
+                        mean_reward = stats['sum_rewards'] / stats['count']
+                        di = numpy.sqrt((3/2 * numpy.log(self.step + 1)) / stats['count'])
+                        upper_bound = mean_reward + di
+                    else:
+                        upper_bound = 1e400
+                    if(upper_bound > max_upper_bound):
+                        max_upper_bound = upper_bound
+                        self.best_value = float(token)
+                p = random.uniform(0, 1)  
+                if self.step < 1000:
+                    token_value = random.choice([0.25, 0.5, 1.0, 2.0, 4.0])
+                else:                 
+                    token_value = self.best_value       
+                self.last_token_value = token_value
+                transition["token_value"] = token_value
         if self.token_mode == EPSILON_GREEDY:
             self.step += 1
             if(str(self.last_token_value) not in self.tokens_dict):
                 self.tokens_dict[str(self.last_token_value)] = {'sum_rewards': 0, 'count': 0} 
-            # self.tokens_dict[str(self.last_token_value)]['sum_rewards'].append(sum(rewards)) 
-            # if(len(self.tokens_dict[str(self.last_token_value)]['sum_rewards']) > 1000):
-            #     self.tokens_dict[str(self.last_token_value)]['sum_rewards'].pop(0)
-            
             self.tokens_dict[str(self.last_token_value)]['sum_rewards'] += sum(rewards)
             self.tokens_dict[str(self.last_token_value)]['count'] += 1    
-            #if(self.step % 1000 == 1):
-                #print(self.tokens_dict)
-
             token_value = self.last_token_value
             if(self.epsilon > 0.2 and self.step % 5000 == 0):
-                self.epsilon -= 0.1
-                
-            if (self.step % 100 == 1):
+                self.epsilon -= 0.1       
+            if done:
                 max_mean = float("-inf")
                 for token, stats in self.tokens_dict.items():
                     if(stats['count'] != 0):
-                        mean_reward = stats['sum_rewards'] / stats['count']
-                        #print("token: ", token, " " ,mean_reward, " ", stats["count"])
+                        mean_reward = stats['sum_rewards'] / stats['count']                       
                         if mean_reward > max_mean:  
                             max_mean = mean_reward
                             self.best_value = float(token)
-
-                  
                 p = random.uniform(0, 1)  
                 if p < self.epsilon:
                     token_value = random.choice([0.25, 0.5, 1.0, 2.0, 4.0])
                 else:                 
-                    token_value = self.best_value
-                    mean_reward = self.tokens_dict[str(token_value)]['sum_rewards'] / stats['count']
-                    #print("token: ", token, " " ,mean_reward, " ", stats["count"])
-                    #print("max mean: ", self.max_mean)
-                    
+                    token_value = self.best_value 
                 self.last_token_value = token_value
                 transition["token_value"] = token_value  
-
         if self.token_mode == META: 
             self.step += 1
             last_state = -1
@@ -200,5 +210,4 @@ class MATE(ActorCritic):
                     transition["rewards"][i] += min(filtered_trust_responses)
         if done:
             self.last_rewards_observed = [[] for _ in range(self.nr_agents)]
-            print(token_value)
         return transition

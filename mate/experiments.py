@@ -9,7 +9,7 @@ def run_episode(env, controller, params, training_mode=True):
     joint_probs_history = []
     request_messages_sent = 0
     response_messages_sent = 0
-    token_history = []
+    token_history = -1
     while not done:
         joint_action, joint_probs = controller.policy(observations)
         next_observations, rewards, done, info = env.step(joint_action)
@@ -19,8 +19,8 @@ def run_episode(env, controller, params, training_mode=True):
             transition = controller.update(observations, joint_action, rewards, next_observations, done, info)
             request_messages_sent += transition["request_messages_sent"]
             response_messages_sent += transition["response_messages_sent"]
-            if transition["token_value"] > 0 and time_step % 100 == 0:
-                token_history.append(transition["token_value"])
+            if transition["token_value"] > 0:
+                token_history = transition["token_value"]
         observations = next_observations
     return {
         "discounted_returns": env.discounted_returns,
@@ -46,6 +46,7 @@ def run_episodes(nr_episodes, env, controller, params, training_mode=True):
     for _ in range(nr_episodes):
         result = run_episode(env, controller, params, training_mode)
         for i, dR, uR in zip(range(env.nr_agents), result["discounted_returns"], result["undiscounted_returns"]):
+            #print(uR)
             discounted_returns[i] += (dR*1.0)/nr_episodes
             undiscounted_returns[i] += (uR*1.0)/nr_episodes
         domain_values += (result["domain_value"]*1.0)/nr_episodes
