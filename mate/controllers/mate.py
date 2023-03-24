@@ -45,10 +45,11 @@ class MATE(ActorCritic):
         self.epsilon = get_param_or_default(params, "epsilon", 0.9)
         self.initial_value = get_param_or_default(params, "initial_value", random.choice([0.25, 0.5, 1.0, 2.0, 4.0]))
         self.best_value = copy.copy(self.initial_value)
-        self.last_token_value = self.initial_value
+        self.last_token_value = random.choice([0.25, 0.5, 1.0, 2.0, 4.0])#numpy.zeros(self.nr_agents)
         self.tokens_dict = {}
-        self.Q_table = numpy.ones((2, 32)) 
-        self.alpha = 0.8
+        self.Q_table = numpy.zeros((2, 36, 128)) 
+        self.Q_table_joint = numpy.zeros((10, 10, 10, 10, 5)) 
+        self.alpha = 0.5
         self.step = 0
         self.min = 0.0
 
@@ -76,9 +77,30 @@ class MATE(ActorCritic):
         next_history = torch.tensor(numpy.array([next_history]), dtype=torch.float32, device=self.device)
         value = self.get_values(agent_id, history)[0].item()
         next_value = self.get_values(agent_id, next_history)[0].item()
-        token_value = reward + self.gamma*next_value - value
+        token_value = abs(reward + self.gamma*next_value - value)
         return token_value 
+    
+    def updateQTable(self, agent_id, reward, token, new_state, last_state, new_value):        
+        maxQ = max(self.Q_table[agent_id, new_state, :])
+        token = int(token*4)
+        self.Q_table[agent_id, last_state, token] = (1-self.alpha) * self.Q_table[agent_id,last_state, token] + self.alpha*(reward + self.gamma * new_value + self.gamma * maxQ)
+        #print(self.Q_table[agent_id, last_state, token] )
+        #print(self.alpha*(reward + self.gamma * new_value + self.gamma * maxQ))
         
+    def updateQTable_joint(self, rewards, token, agent0_new, agent1_new, coin0_new, coin1_new, agent0_last, agent1_last, coin0_last, coin1_last, new_value): 
+        maxQ = max(self.Q_table_joint[agent0_new, agent1_new, coin0_new, coin1_new, :])
+        if(token == 0.25):
+            token = 0
+        elif(token == 0.5):
+            token = 1
+        elif(token == 1.0):
+            token = 2
+        elif(token == 2.0):
+            token = 3
+        elif(token == 4.0):
+            token = 4
+        self.Q_table_joint[agent0_last, agent1_last, coin0_last, coin1_last, token] = (1-self.alpha) * self.Q_table_joint[agent0_last, agent1_last, coin0_last, coin1_last, token] + self.alpha*(rewards + self.gamma * maxQ)
+        )
 
     def prepare_transition(self, joint_histories, joint_action, rewards, next_joint_histories, done, info):
         transition = super(MATE, self).prepare_transition(joint_histories, joint_action, rewards, next_joint_histories, done, info)
@@ -89,6 +111,85 @@ class MATE(ActorCritic):
             token_value = random.choice(self.token_range)
         if self.token_mode == DYNAMIC_TOKEN:
             token_value = numpy.zeros(self.nr_agents)
+            for i, history, next_history in zip(range(self.nr_agents), joint_histories, next_joint_histories):
+                if self.can_rely_on(i, transition["rewards"][i], history, next_history):
+                    token_value[i] = self.get_token(i, transition["rewards"][i], history, next_history) 
+        ## INDIVIDUAL QLEARNING ##         
+                    #print(token_value[i])
+        # if self.token_mode == META:
+        #     self.step += 1
+        #     token_value = numpy.zeros(self.nr_agents)
+        #     if(self.epsilon > 0.2 and self.step % 5000 == 0):
+        #         self.epsilon -= 0.1
+        #     for i, history, next_history in zip(range(self.nr_agents), joint_histories, next_joint_histories):
+        #         history = torch.tensor(numpy.array([history]), dtype=torch.float32, device=self.device)
+        #         next_history = torch.tensor(numpy.array([next_history]), dtype=torch.float32, device=self.device)
+        #         new_value = self.get_values(i, next_history).item()
+        #         new_state = 0
+        #         if(1.0 in next_history.tolist()[0][0][18:27]):
+        #             new_state = 1
+        #         last_state = 0
+        #         if(1.0 in history.tolist()[0][0][18:27]):
+        #             last_state = 1
+        #         self.updateQTable(i, transition["rewards"][i], self.last_token_value[i], new_state, last_state, new_value)
+        #         p = random.uniform(0, 1)  
+        #         if p < self.epsilon:
+        #             token_value[i] = random.choice([0.25, 0.5, 1.0, 2.0, 4.0])
+        #         else:
+        #             token_value[i] = 0.25 * numpy.argmax(self.Q_table[i, new_state,:])
+                
+        #     self.last_token_value = token_value
+        
+        if self.token_mode == META:
+            self.step += 1
+            if(self.epsilon > 0.2 and self.step % 5000 == 0):
+                self.epsilon -= 0.1
+            
+            ##TODO: Hier korrekt machen, nicht nur vom ersten Agenten nehmen
+            history = torch.tensor(numpy.array([joint_histories[0]]), dtype=torch.float32, device=self.device)
+            next_history = torch.tensor(numpy.array([next_joint_histories[0]]), dtype=torch.float32, device=self.device)
+            new_value = self.get_values(0, next_history)[0].item()+self.get_values(1, next_history)[0].item()
+
+            agent0_new= next_history.tolist()[0][0][0:9].index(1.0)
+            agent1_new= next_history.tolist()[0][0][9:18].index(1.0)
+            coin0_new = 9
+            coin1_new = 9
+            if(1.0 in next_history.tolist()[0][0][18:27]):
+                coin0_new = next_history.tolist()[0][0][18:27].index(1.0)
+            if(1.0 in next_history.tolist()[0][0][27:36]):
+                coin1_new = next_history.tolist()[0][0][27:36].index(1.0)
+            
+            agent0_last= history.tolist()[0][0][0:9].index(1.0)
+            agent1_last= history.tolist()[0][0][9:18].index(1.0)
+            coin0_last = 9
+            coin1_last = 9
+            if(1.0 in history.tolist()[0][0][18:27]):
+                coin0_last = history.tolist()[0][0][18:27].index(1.0)
+            if(1.0 in history.tolist()[0][0][27:36]):
+                coin1_last = history.tolist()[0][0][27:36].index(1.0)
+            
+       
+                
+            #print(self.token_values_dict[(str(self.last_token_value))])
+            self.updateQTable_joint(sum(transition["rewards"]), self.last_token_value, agent0_new, agent1_new, coin0_new, coin1_new, agent0_last, agent1_last, coin0_last, coin1_last, new_value)
+            p = random.uniform(0, 1)  
+            if p < self.epsilon:
+                token_value = random.choice([0.25, 0.5, 1.0, 2.0, 4.0])
+            else:
+                value = numpy.argmax(self.Q_table_joint[agent0_new, agent1_new, coin0_new, coin1_new, :])
+                if(value == 0):
+                    token_value = 0.25
+                elif(value == 1):
+                    token_value = 0.5
+                elif(value == 2):
+                    token_value = 1.0
+                elif(value == 3):
+                    token_value = 2.0
+                elif(value == 4):
+                    token_value = 4.0
+
+                
+            self.last_token_value = token_value
         if self.token_mode == UCB:
             self.step += 1
             max_upper_bound = 0
@@ -139,29 +240,7 @@ class MATE(ActorCritic):
                     token_value = self.best_value 
                 self.last_token_value = token_value
                 transition["token_value"] = token_value  
-        if self.token_mode == META: 
-            self.step += 1
-            last_state = -1
-            new_state = -1
-            if(1 in joint_histories[0][0][18:27]):
-                last_state = 0 
-            if(1 in joint_histories[0][0][27:36]):
-                last_state = 1
-            if(1 in next_joint_histories[0][0][18:27]):
-                new_state = 0 
-            if(1 in next_joint_histories[0][0][27:36]):
-                new_state = 1
-            maxQ = numpy.max(self.Q_table[new_state])
-            self.Q_table[last_state, int(self.last_token_value*4)] = (1-self.alpha) * self.Q_table[last_state, int(self.last_token_value*4)] + self.alpha * (sum(rewards) + self.gamma * maxQ)
-            p = random.uniform(0, 1)  
-            if p < self.epsilon:
-                token_value = 0.25 * random.choice([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24])
-            else:
-                token_value = 0.25 * numpy.max(self.Q_table[last_state])
-                #token_value = 1
-            self.last_token_value = token_value
-
-            
+         
         original_rewards = [r for r in rewards]
         self.trust_request_matrix[:] = 0
         self.trust_response_matrix[:] = 0
@@ -177,7 +256,7 @@ class MATE(ActorCritic):
                 neighborhood = info["neighbor_agents"][i]
                 for j in neighborhood:
                     assert i != j
-                    self.trust_request_matrix[j][i] += token_value
+                    self.trust_request_matrix[j][i] += token_value#[i]
                     transition["request_messages_sent"] += 1
         # 2. Send trust responses
         for i, history, next_history in zip(range(self.nr_agents), joint_histories, next_joint_histories):
@@ -190,13 +269,13 @@ class MATE(ActorCritic):
                     transition["rewards"][i] += numpy.max(trust_requests)
             if respond_enabled and len(neighborhood) > 0:
                 if self.can_rely_on(i, transition["rewards"][i], history, next_history):
-                    accept_trust = token_value
+                    accept_trust = 1
                 else:
-                    accept_trust = -token_value
+                    accept_trust = -1
                 for j in neighborhood:
                     assert i != j
                     if self.trust_request_matrix[i][j] > 0:
-                        self.trust_response_matrix[j][i] = accept_trust
+                        self.trust_response_matrix[j][i] = accept_trust * token_value#[j] 
                         if accept_trust > 0:
                             transition["response_messages_sent"] += 1
         # 3. Receive trust responses
@@ -210,4 +289,5 @@ class MATE(ActorCritic):
                     transition["rewards"][i] += min(filtered_trust_responses)
         if done:
             self.last_rewards_observed = [[] for _ in range(self.nr_agents)]
+            print(token_value)
         return transition
