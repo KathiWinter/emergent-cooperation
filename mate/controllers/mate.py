@@ -48,8 +48,8 @@ class MATE(ActorCritic):
         self.last_token_value =numpy.ones(self.nr_agents)
         self.tokens_dict = {}
         self.Q_table = numpy.zeros((2, 36, 128)) 
-        self.Q_table_joint = numpy.zeros((10, 10, 10, 10, 5)) 
-        self.alpha = 0.5
+        self.Q_table_joint = numpy.zeros((2, 10, 10, 10, 10, 5)) 
+        self.alpha = 0.8
         self.step = 0
         self.min = 0.0
 
@@ -87,8 +87,8 @@ class MATE(ActorCritic):
         #print(self.Q_table[agent_id, last_state, token] )
         #print(self.alpha*(reward + self.gamma * new_value + self.gamma * maxQ))
         
-    def updateQTable_joint(self, rewards, token, agent0_new, agent1_new, coin0_new, coin1_new, agent0_last, agent1_last, coin0_last, coin1_last, new_value): 
-        maxQ = max(self.Q_table_joint[agent0_new, agent1_new, coin0_new, coin1_new, :])
+    def updateQTable_joint(self, agent_id, reward, token, agent0_new, agent1_new, coin0_new, coin1_new, agent0_last, agent1_last, coin0_last, coin1_last, new_value): 
+        maxQ = max(self.Q_table_joint[agent_id, agent0_new, agent1_new, coin0_new, coin1_new, :])
         if(token == 0.25):
             token = 0
         elif(token == 0.5):
@@ -99,7 +99,7 @@ class MATE(ActorCritic):
             token = 3
         elif(token == 4.0):
             token = 4
-        self.Q_table_joint[agent0_last, agent1_last, coin0_last, coin1_last, token] = (1-self.alpha) * self.Q_table_joint[agent0_last, agent1_last, coin0_last, coin1_last, token] + self.alpha*(rewards + self.gamma * maxQ)
+        self.Q_table_joint[agent_id, agent0_last, agent1_last, coin0_last, coin1_last, token] = (1-self.alpha) * self.Q_table_joint[agent_id,agent0_last, agent1_last, coin0_last, coin1_last, token] + self.alpha*(reward + self.gamma * maxQ)
         
 
     def prepare_transition(self, joint_histories, joint_action, rewards, next_joint_histories, done, info):
@@ -116,7 +116,7 @@ class MATE(ActorCritic):
                     token_value[i] = self.get_token(i, transition["rewards"][i], history, next_history) 
         if self.token_mode == META:
             self.step += 1
-            token_value = self.last_token_value
+            token_value = numpy.zeros(self.nr_agents)
             if(self.epsilon > 0.2 and self.step % 5000 == 0):
                 self.epsilon -= 0.1
             p = random.uniform(0, 1) 
@@ -145,12 +145,12 @@ class MATE(ActorCritic):
                     coin1_last = history.tolist()[0][27:36].index(1.0)
              
                 #print(self.token_values_dict[(str(self.last_token_value))])
-                self.updateQTable_joint(transition["rewards"][i], self.last_token_value[i], agent0_new, agent1_new, coin0_new, coin1_new, agent0_last, agent1_last, coin0_last, coin1_last, new_value)
+                self.updateQTable_joint(i, reward, self.last_token_value[i], agent0_new, agent1_new, coin0_new, coin1_new, agent0_last, agent1_last, coin0_last, coin1_last, new_value)
              
                 if p < self.epsilon:
                     token_value[i] = random.choice([0.25, 0.5, 1.0, 2.0, 4.0])
                 else:
-                    value = numpy.argmax(self.Q_table_joint[agent0_new, agent1_new, coin0_new, coin1_new, :])
+                    value = numpy.argmax(self.Q_table_joint[i, agent0_last, agent1_last, coin0_last, coin1_last, :])
                     if(value == 0):
                         token_value[i] = 0.25
                     elif(value == 1):
@@ -161,9 +161,6 @@ class MATE(ActorCritic):
                         token_value[i] = 2.0
                     elif(value == 4):
                         token_value[i] = 4.0
-
-                
-            self.last_token_value[i] = token_value[i]
         if self.token_mode == UCB:
             self.step += 1
             max_upper_bound = 0
