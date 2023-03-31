@@ -42,10 +42,10 @@ class MATE(ActorCritic):
         self.trust_response_matrix = numpy.zeros((self.nr_agents, self.nr_agents), dtype=int)
         self.defect_mode = get_param_or_default(params, "defect_mode", NO_DEFECT)
         self.token_mode = get_param_or_default(params, "token_mode", FIXED_TOKEN)
-        self.epsilon = get_param_or_default(params, "epsilon", 0.1)
+        self.epsilon = get_param_or_default(params, "epsilon", 0.9)
         self.initial_value = get_param_or_default(params, "initial_value", random.choice([0.25, 0.5, 1.0, 2.0, 4.0]))
         self.best_value = copy.copy(self.initial_value)
-        self.last_token_value = random.choice([0.25, 0.5, 1.0, 2.0, 4.0])
+        self.last_token_value = random.choice([0.25, 0.5, 1.0, 2.0, 4.0])#[random.choice([0.25, 0.5, 1.0, 2.0, 4.0]),random.choice([0.25, 0.5, 1.0, 2.0, 4.0])]
         self.tokens_dict = {}
         self.Q_table = numpy.zeros((2, 36, 128)) 
         self.Q_table_joint = numpy.negative(numpy.ones((2, 10, 10, 6)))
@@ -57,7 +57,8 @@ class MATE(ActorCritic):
         self.min = 0.0
         self.episode = 0
         self.episode_return = 0
-
+        self.states = []
+        
     def can_rely_on(self, agent_id, reward, history, next_history):
         if self.mate_mode == STATIC_MODE:
             is_empty = self.last_rewards_observed[agent_id]
@@ -93,7 +94,7 @@ class MATE(ActorCritic):
         #print(self.Q_table[agent_id, last_state, token] )
         #print(self.alpha*(reward + self.gamma * new_value + self.gamma * maxQ))
         
-    def updateQTable_joint(self, agent_id, reward, agent0_new, agent1_new, coin0_new, coin1_new, agent0_last, agent1_last, coin0_last, coin1_last, new_value): 
+    def updateQTable_joint(self, agent_id, reward, agent0_new, agent1_new, coin0_new, coin1_new, agent0_last, agent1_last, coin0_last, coin1_last): 
         
         maxQ = max(self.Q_table_joint[agent_id, coin0_new, coin1_new, :5])
         token = int(self.Q_table_joint[agent_id, coin0_last, coin1_last, 5])
@@ -107,7 +108,7 @@ class MATE(ActorCritic):
         #     token = 3
         # elif(token == 4.0):
         #     token = 4
-        self.Q_table_joint[agent_id,coin0_last, coin1_last, token] = self.Q_table_joint[agent_id, coin0_last, coin1_last, token] + (reward)
+        self.Q_table_joint[agent_id,coin0_last, coin1_last, token] = self.Q_table_joint[agent_id, coin0_last, coin1_last, token] + (reward + maxQ)
 
     
     def prepare_transition(self, joint_histories, joint_action, rewards, next_joint_histories, done, info):
@@ -128,7 +129,7 @@ class MATE(ActorCritic):
             if(self.epsilon > 0.1 and self.step % 2000 == 0):
                 self.epsilon -= 0.1
             p = random.uniform(0, 1) 
-            
+
             if self.step > 1:
                 for i, reward, history, next_history in zip(range(self.nr_agents), rewards, joint_histories, next_joint_histories):
                     history = torch.tensor(numpy.array([history[0]]), dtype=torch.float32, device=self.device)
@@ -151,16 +152,23 @@ class MATE(ActorCritic):
                         coin0_last = history.tolist()[0][18:27].index(1.0)
                     if(1.0 in history.tolist()[0][27:36]):
                         coin1_last = history.tolist()[0][27:36].index(1.0)
-             
-                    self.updateQTable_joint(i, reward, agent0_new, agent1_new, coin0_new, coin1_new, agent0_last, agent1_last, coin0_last, coin1_last, new_value)
 
-                    if(self.step % 10000 == 0):
-                        for p in range(0, 9):
-                            for j in range(0, 9):
-                                for m in range(0, 10):
-                                    for n in range(0, 10):
-                                        if(p != -1 or j != -1 or m != -1 or n != -1):
-                                            print(self.Q_table_joint[0, p, j, m, n, :])
+                    #self.episode_return[i] += reward
+                    #self.states.append([i, agent0_new, agent1_new, coin0_new, coin1_new, agent0_last, agent1_last, coin0_last, coin1_last])
+                    self.updateQTable_joint(i, reward, agent0_new, agent1_new, coin0_new, coin1_new, agent0_last, agent1_last, coin0_last, coin1_last)
+                    
+                    #if done: 
+                        #for i, agent0_new, agent1_new, coin0_new, coin1_new, agent0_last, agent1_last, coin0_last, coin1_last in self.states:
+                                #self.updateQTable_joint(i, self.episode_return[i], agent0_new, agent1_new, coin0_new, coin1_new, agent0_last, agent1_last, coin0_last, coin1_last)
+                        #self.episode_return[i] = 0
+                        #self.states = []
+                    # if(self.step % 10000 == 0):
+                    #     for p in range(0, 9):
+                    #         for j in range(0, 9):
+                    #             for m in range(0, 10):
+                    #                 for n in range(0, 10):
+                    #                     if(p != -1 or j != -1 or m != -1 or n != -1):
+                    #                         print(self.Q_table_joint[0, p, j, m, n, :])
      
                         
                     if p < self.epsilon:
@@ -219,7 +227,7 @@ class MATE(ActorCritic):
                         max_upper_bound = upper_bound
                         self.best_value = float(token)
                 p = random.uniform(0, 1)  
-                if p < 0.1 and self.episode < 5000:
+                if p < 0.1:
                     token_value = random.choice([0.25, 0.5, 1.0, 2.0, 4.0])
                 else:                 
                     token_value = self.best_value       
@@ -290,7 +298,7 @@ class MATE(ActorCritic):
                 for j in neighborhood:
                     assert i != j
                     if self.trust_request_matrix[i][j] > 0:
-                        self.trust_response_matrix[j][i] = accept_trust * token_value#[j] 
+                        self.trust_response_matrix[j][i] = accept_trust * token_value#[i] 
                         if accept_trust > 0:
                             transition["response_messages_sent"] += 1
         # 3. Receive trust responses
