@@ -9,7 +9,22 @@ ALGORITHM_NAMES = {
     "IAC_": "Naive Learning",
     "Gifting-ZEROSUM_": "Gifting (Zero-Sum)",
     "Gifting-BUDGET_": "Gifting (Budget)",
-    "MATE-TD_": "MATE",
+    #"MATE-TD-T0_": "MATE T-0 / Naive Learning",
+    "MATE-TD_": "MATE T-1",
+    "MATE-TD-T2": "MATE T-2",
+    "MATE-TD-T4": "MATE T-4",
+    "MATE-TD-T0.25": "MATE T-0.25",
+    "MATE-TD-T0.5": "MATE T-0.5",
+    "MATE-TD-T0.75": "MATE T-0.75",
+    "MATE-TD-T8": "MATE T-8",
+    "MATE-TD-T1.5": "MATE T-1.5",
+    "MATE-TD-T2.5": "MATE T-2.5",
+    "MATE-TD-T3": "MATE T-3",
+    "MATE-TD-RANDOM": "MATE (random)",
+    "MATE-TD-META": "MATE (state-based)",
+    "MATE-TD-EPSGREEDY": "MATE (epsilon-greedy)",
+    "MATE-TD-UCB": "MATE (UCB)",
+    #"MATE-TD-DYNAMIC_TOKEN": "MATE (dynamic)",
     "MATE-REWARD_": "MATE (reward-based)",
     "LIO_": "LIO",
     "MATE-TD-DEFECT_COMPLETE_": "MATE (defect=Complete)",
@@ -74,10 +89,12 @@ filename_pdf = filename_prefix + ".pdf"
 
 data_prefix_pattern = params["data_prefix_pattern"]
 
+#("cornflowerblue","MATE-TD-EPSGREEDY"),
+#("firebrick","MATE-TD-UCB"),
 if baseline_comparison:
-    algorithm_info = [("b","MATE-TD_"), ("c","MATE-REWARD_"), ("r", "LIO_"), ("magenta","Gifting-ZEROSUM_"), ("darkorange", "Gifting-BUDGET_"), ("k","IAC_"), ("darkblue", "Random_")]
+    algorithm_info = [("sienna","MATE-TD_"), ("turquoise","MATE-TD-UCB"), ("deeppink","MATE-TD-EPSGREEDY"), ("firebrick","MATE-TD-T0.25"), ("rosybrown","MATE-TD-T0.5"), ("deeppink","MATE-TD-T0.75"), ("turquoise","MATE-TD-T1.5"), ("lightseagreen","MATE-TD-T2"), ("dodgerblue","MATE-TD-T2.5"), ("greenyellow","MATE-TD-T3"), ("forestgreen","MATE-TD-T4"), ("springgreen","MATE-TD-T8"), ("gray","IAC_")]
 else:
-    algorithm_info = [("b","MATE-TD_"), ("purple","MATE-TD-DEFECT_COMPLETE_"), ("darkgray","MATE-TD-DEFECT_REQUEST_"), ("c","MATE-TD-DEFECT_RESPONSE_"), ("r", "LIO_"), ("k","IAC_")]
+    algorithm_info = [("sienna","MATE-TD_"), ("turquoise","MATE-TD-UCB"), ("deeppink","MATE-TD-EPSGREEDY"), ("firebrick","MATE-TD-T0.25"), ("rosybrown","MATE-TD-T0.5"), ("deeppink","MATE-TD-T0.75"), ("turquoise","MATE-TD-T1.5"), ("lightseagreen","MATE-TD-T2"), ("dodgerblue","MATE-TD-T2.5"), ("greenyellow","MATE-TD-T3"), ("forestgreen","MATE-TD-T4"), ("springgreen","MATE-TD-T8"), ("gray","IAC_")]
 
 for color, algorithm_name in algorithm_info:
     params["data_prefix_pattern"] = data_prefix_pattern.format(
@@ -113,6 +130,7 @@ if params["domain_name"] in LEGEND_CONFIG and params["y_label"] == Y_LABEL["undi
 if not baseline_comparison and params["y_label"] == Y_LABEL["undiscounted_returns"]:
     legend = plot.legend()
 plot.tight_layout()
+ax.legend(bbox_to_anchor=(1.1, 1.05))
 ax.grid(which='both', linestyle='--')
 plot.savefig(join(path, filename), bbox_inches='tight')
 plot.savefig(join(path, filename_png), bbox_inches='tight')

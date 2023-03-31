@@ -166,6 +166,10 @@ def make(params):
             params["mate_mode"] = "td_error"
             params["token_mode"] = "ucb"
             return mate.MATE(params)
+    if algorithm_name == "MATE-TD-UCB1TUNED":
+            params["mate_mode"] = "td_error"
+            params["token_mode"] = "ucb1-tuned"
+            return mate.MATE(params)
     if algorithm_name == "MATE-TD-META":
         params["mate_mode"] = "td_error"
         params["token_mode"] = "meta-policy"
