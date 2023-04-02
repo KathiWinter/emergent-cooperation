@@ -37,6 +37,8 @@ class MATE(ActorCritic):
         self.last_rewards_observed = [[] for _ in range(self.nr_agents)]
         self.mate_mode = get_param_or_default(params, "mate_mode", STATIC_MODE)
         self.token_value = get_param_or_default(params, "token_value", 1)
+        self.token_value0 = get_param_or_default(params, "token_value-0", 1)
+        self.token_value1 = get_param_or_default(params, "token_value-1", 1)
         self.token_range = get_param_or_default(params, "token_range", [0.5, 1, 2])
         self.trust_request_matrix = numpy.zeros((self.nr_agents, self.nr_agents), dtype=int)
         self.trust_response_matrix = numpy.zeros((self.nr_agents, self.nr_agents), dtype=int)
@@ -115,7 +117,7 @@ class MATE(ActorCritic):
         transition = super(MATE, self).prepare_transition(joint_histories, joint_action, rewards, next_joint_histories, done, info)
 
         if self.token_mode == FIXED_TOKEN:
-            token_value = self.token_value
+            token_value = [self.token_value0, self.token_value1]
         if self.token_mode == RANDOM_TOKEN:
             token_value = [random.choice([0.25, 0.5, 1.0, 2.0, 4.0]), random.choice([0.25, 0.5, 1.0, 2.0, 4.0])]
         if self.token_mode == DYNAMIC_TOKEN:
