@@ -21,10 +21,9 @@ ALGORITHM_NAMES = {
     "MATE-TD-T2.5": "MATE T-2.5",
     "MATE-TD-T3": "MATE T-3",
     "MATE-TD-RANDOM": "MATE (random)",
-    "MATE-TD-META": "MATE (state-based)",
     "MATE-TD-EPSGREEDY": "MATE (epsilon-greedy)",
     "MATE-TD-UCB": "MATE (UCB)",
-    #"MATE-TD-DYNAMIC_TOKEN": "MATE (dynamic)",
+   "MATE-TD-EARNING": "MATE (Earning)",
     "MATE-REWARD_": "MATE (reward-based)",
     "LIO_": "LIO",
     "MATE-TD-DEFECT_COMPLETE_": "MATE (defect=Complete)",
@@ -89,12 +88,10 @@ filename_pdf = filename_prefix + ".pdf"
 
 data_prefix_pattern = params["data_prefix_pattern"]
 
-#("cornflowerblue","MATE-TD-EPSGREEDY"),
-#("firebrick","MATE-TD-UCB"),
 if baseline_comparison:
-    algorithm_info = [("sienna","MATE-TD_"), ("turquoise","MATE-TD-UCB"), ("deeppink","MATE-TD-EPSGREEDY"), ("firebrick","MATE-TD-T0.25"), ("rosybrown","MATE-TD-T0.5"), ("deeppink","MATE-TD-T0.75"), ("turquoise","MATE-TD-T1.5"), ("lightseagreen","MATE-TD-T2"), ("dodgerblue","MATE-TD-T2.5"), ("greenyellow","MATE-TD-T3"), ("forestgreen","MATE-TD-T4"), ("springgreen","MATE-TD-T8"), ("gray","IAC_")]
+    algorithm_info = [("sienna","MATE-TD_"), ("sienna","MATE-TD-T1.5"), ("sienna","MATE-TD-T2"), ("sienna","MATE-TD-T2.5"), ("deeppink","MATE-TD-RANDOM"), ("turquoise","MATE-TD-EARNING"), ("gray","IAC_")]
 else:
-    algorithm_info = [("sienna","MATE-TD_"), ("turquoise","MATE-TD-UCB"), ("deeppink","MATE-TD-EPSGREEDY"), ("firebrick","MATE-TD-T0.25"), ("rosybrown","MATE-TD-T0.5"), ("deeppink","MATE-TD-T0.75"), ("turquoise","MATE-TD-T1.5"), ("lightseagreen","MATE-TD-T2"), ("dodgerblue","MATE-TD-T2.5"), ("greenyellow","MATE-TD-T3"), ("forestgreen","MATE-TD-T4"), ("springgreen","MATE-TD-T8"), ("gray","IAC_")]
+    algorithm_info = [("sienna","MATE-TD_"), ("sienna","MATE-TD-T1.5"), ("sienna","MATE-TD-T2"), ("sienna","MATE-TD-T2.5"), ("deeppink","MATE-TD-RANDOM"), ("turquoise","MATE-TD-EARNING"), ("gray","IAC_")]
 
 for color, algorithm_name in algorithm_info:
     params["data_prefix_pattern"] = data_prefix_pattern.format(

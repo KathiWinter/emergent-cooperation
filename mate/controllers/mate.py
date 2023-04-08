@@ -23,9 +23,9 @@ FIXED_TOKEN = "fixed"
 RANDOM_TOKEN = "random"
 EPSILON_GREEDY = "epsilon-greedy"
 UCB = "ucb"
-DYNAMIC_TOKEN = "dynamic-token"
 META = "meta-policy"
-TOKEN_MODES = [FIXED_TOKEN, RANDOM_TOKEN, EPSILON_GREEDY, UCB, META, DYNAMIC_TOKEN]
+EARNING = "earning"
+TOKEN_MODES = [FIXED_TOKEN, RANDOM_TOKEN, EPSILON_GREEDY, UCB, META, EARNING]
 
 """
  Mutual Acknowledgment Token Exchange (MATE)
@@ -40,8 +40,8 @@ class MATE(ActorCritic):
         self.token_value0 = get_param_or_default(params, "token_value-0", 1)
         self.token_value1 = get_param_or_default(params, "token_value-1", 1)
         self.token_range = get_param_or_default(params, "token_range", [0.5, 1, 2])
-        self.trust_request_matrix = numpy.zeros((self.nr_agents, self.nr_agents), dtype=int)
-        self.trust_response_matrix = numpy.zeros((self.nr_agents, self.nr_agents), dtype=int)
+        self.trust_request_matrix = numpy.zeros((self.nr_agents, self.nr_agents), dtype=numpy.float32)
+        self.trust_response_matrix = numpy.zeros((self.nr_agents, self.nr_agents), dtype=numpy.float32)
         self.defect_mode = get_param_or_default(params, "defect_mode", NO_DEFECT)
         self.token_mode = get_param_or_default(params, "token_mode", FIXED_TOKEN)
         self.epsilon = get_param_or_default(params, "epsilon", 0.9)
@@ -60,6 +60,12 @@ class MATE(ActorCritic):
         self.episode = 0
         self.episode_return = [0, 0]
         self.states = []
+        self.both_well = 0
+        self.agent1_well = False
+        self.agent2_well = False
+        self.none_well = 0
+        self.one_well = 0
+        self.two_well = 0
         
     def can_rely_on(self, agent_id, reward, history, next_history):
         if self.mate_mode == STATIC_MODE:
@@ -88,14 +94,6 @@ class MATE(ActorCritic):
         token_value = abs(reward + self.gamma*next_value - value)
         return token_value 
     
-    def updateQTable(self, agent_id, reward, token, new_state, last_state, new_value):        
-        maxQ = max(self.Q_table[agent_id, new_state, :])
-        last_token = max(self.Q_table[agent_id, new_state, :])
-        token = int(token*4)
-        self.Q_table[agent_id, last_state, last_token] =  self.Q_table[agent_id,last_state, last_token] + (reward)
-        #print(self.Q_table[agent_id, last_state, token] )
-        #print(self.alpha*(reward + self.gamma * new_value + self.gamma * maxQ))
-        
     def updateQTable_joint(self, agent_id, reward, agent0_new, agent1_new, coin0_new, coin1_new, agent0_last, agent1_last, coin0_last, coin1_last): 
         
         maxQ = max(self.Q_table_joint[agent_id, coin0_new, coin1_new, :5])
@@ -110,102 +108,23 @@ class MATE(ActorCritic):
         #     token = 3
         # elif(token == 4.0):
         #     token = 4
-        self.Q_table_joint[agent_id,coin0_last, coin1_last, token] = self.Q_table_joint[agent_id, coin0_last, coin1_last, token] + (reward + maxQ)
+        self.Q_table_joint[agent_id,coin0_last, coin1_last, token] = self.Q_table_joint[agent_id, coin0_last, coin1_last, token] + (reward)
 
     
     def prepare_transition(self, joint_histories, joint_action, rewards, next_joint_histories, done, info):
         transition = super(MATE, self).prepare_transition(joint_histories, joint_action, rewards, next_joint_histories, done, info)
 
         if self.token_mode == FIXED_TOKEN:
-            token_value = [self.token_value0, self.token_value1]
+            token_value = numpy.ones(self.nr_agents)
         if self.token_mode == RANDOM_TOKEN:
-            token_value = [random.choice([0.25, 0.5, 1.0, 2.0, 4.0]), random.choice([0.25, 0.5, 1.0, 2.0, 4.0])]
-        if self.token_mode == DYNAMIC_TOKEN:
+            rand_value= random.choice([0.25, 0.5, 1.0, 2.0, 4.0])
+            token_value = [rand_value, rand_value]#[random.choice([0.25, 0.5, 1.0, 2.0, 4.0]), random.choice([0.25, 0.5, 1.0, 2.0, 4.0])]
+        if self.token_mode == EARNING: 
             token_value = numpy.zeros(self.nr_agents)
-            for i, history, next_history in zip(range(self.nr_agents), joint_histories, next_joint_histories):
-                if self.can_rely_on(i, transition["rewards"][i], history, next_history):
-                    token_value[i] = self.get_token(i, transition["rewards"][i], history, next_history) 
-        if self.token_mode == META:
-            self.step += 1
-            token_value = self.last_token_value
-            if(self.epsilon > 0.1 and self.step % 2000 == 0):
-                self.epsilon -= 0.1
-            p = random.uniform(0, 1) 
-
-            if self.step > 1:
-                for i, reward, history, next_history in zip(range(self.nr_agents), rewards, joint_histories, next_joint_histories):
-                    history = torch.tensor(numpy.array([history[0]]), dtype=torch.float32, device=self.device)
-                    next_history = torch.tensor(numpy.array([next_history[0]]), dtype=torch.float32, device=self.device)
-                    new_value = self.get_values(i, next_history)[0].item()
-                    agent0_new= next_history.tolist()[0][0:9].index(1.0)
-                    agent1_new= next_history.tolist()[0][9:18].index(1.0)
-                    coin0_new = 9
-                    coin1_new = 9
-                    if(1.0 in next_history.tolist()[0][18:27]):
-                        coin0_new = next_history.tolist()[0][18:27].index(1.0)
-                    if(1.0 in next_history.tolist()[0][27:36]):
-                        coin1_new = next_history.tolist()[0][27:36].index(1.0)
-                    
-                    agent0_last= history.tolist()[0][0:9].index(1.0)
-                    agent1_last= history.tolist()[0][9:18].index(1.0)
-                    coin0_last = 9
-                    coin1_last = 9
-                    if(1.0 in history.tolist()[0][18:27]):
-                        coin0_last = history.tolist()[0][18:27].index(1.0)
-                    if(1.0 in history.tolist()[0][27:36]):
-                        coin1_last = history.tolist()[0][27:36].index(1.0)
-
-                    #self.episode_return[i] += reward
-                    #self.states.append([i, agent0_new, agent1_new, coin0_new, coin1_new, agent0_last, agent1_last, coin0_last, coin1_last])
-                    self.updateQTable_joint(i, reward, agent0_new, agent1_new, coin0_new, coin1_new, agent0_last, agent1_last, coin0_last, coin1_last)
-                    
-                    #if done: 
-                        #for i, agent0_new, agent1_new, coin0_new, coin1_new, agent0_last, agent1_last, coin0_last, coin1_last in self.states:
-                                #self.updateQTable_joint(i, self.episode_return[i], agent0_new, agent1_new, coin0_new, coin1_new, agent0_last, agent1_last, coin0_last, coin1_last)
-                        #self.episode_return[i] = 0
-                        #self.states = []
-                    # if(self.step % 10000 == 0):
-                    #     for p in range(0, 9):
-                    #         for j in range(0, 9):
-                    #             for m in range(0, 10):
-                    #                 for n in range(0, 10):
-                    #                     if(p != -1 or j != -1 or m != -1 or n != -1):
-                    #                         print(self.Q_table_joint[0, p, j, m, n, :])
-     
-                        
-                    if p < self.epsilon:
-                        token_value[i] = random.choice([0.25, 0.5, 1.0, 2.0, 4.0])
-                        if(token_value[i] == 0.25):
-                            token = 0
-                        elif(token_value[i] == 0.5):
-                            token = 1
-                        elif(token_value[i] == 1.0):
-                            token = 2
-                        elif(token_value[i] == 2.0):
-                            token = 3
-                        elif(token_value[i] == 4.0):
-                            token = 4
-                        self.Q_table_joint[i,coin0_last, coin1_last, 5] = token
-                    else:
-                        value = numpy.argmax(self.Q_table_joint[i, coin0_last, coin1_last, :5])
-    
-                        if(value == 0):
-                            token_value[i] = 0.25
-                        elif(value == 1):
-                            token_value[i] = 0.5
-                        elif(value == 2):
-                            token_value[i] = 1.0
-                        elif(value == 3):
-                            token_value[i] = 2.0
-                        elif(value == 4):
-                            token_value[i] = 4.0
-                        self.Q_table_joint[i, coin0_last, coin1_last, 5] = value
-                    
-                    self.last_token_value[i] = token_value[i]
-                    
-            self.old_histories = joint_histories
-            self.old_rewards = rewards
-            self.old_joint_action = joint_action
+            for i in range(self.nr_agents):
+                if sum(self.count_accept) != 0.0: 
+                    token_value[i] = self.count_accept[i] / sum(self.count_accept) * 4
+            transition["token_value"] = token_value
         if self.token_mode == UCB:
             token_value = [0,0]
             for i in range(self.nr_agents):
@@ -251,7 +170,6 @@ class MATE(ActorCritic):
                 self.tokens_dict[str(self.last_token_value)]['sum_rewards'].append(self.episode_return)
                 if(len(self.tokens_dict[str(self.last_token_value)]['sum_rewards']) > 50):
                     self.tokens_dict[str(self.last_token_value)]['sum_rewards'].pop(0)  
-                   
 
                 max_mean = float("-inf")
                 for token, stats in self.tokens_dict.items():
@@ -286,6 +204,10 @@ class MATE(ActorCritic):
             requests_enabled = requests_enabled and self.sample_no_comm_failure()
             if requests_enabled and self.can_rely_on(i, reward, history, next_history): # Analyze the "winners" of that step
                 neighborhood = info["neighbor_agents"][i]
+                if i == 0:
+                    self.agent1_well = True
+                else:
+                    self.agent2_well = True
                 for j in neighborhood:
                     assert i != j
                     self.trust_request_matrix[j][i] += token_value[i]
@@ -297,8 +219,10 @@ class MATE(ActorCritic):
             respond_enabled = respond_enabled and self.sample_no_comm_failure()
             if request_receive_enabled[i]:
                 trust_requests = [self.trust_request_matrix[i][x] for x in neighborhood]
+                print(trust_requests)
                 if len(trust_requests) > 0:
                     transition["rewards"][i] += numpy.max(trust_requests)
+
             if respond_enabled and len(neighborhood) > 0:
                 if self.can_rely_on(i, transition["rewards"][i], history, next_history):
                     accept_trust = 1
@@ -308,8 +232,10 @@ class MATE(ActorCritic):
                     assert i != j
                     if self.trust_request_matrix[i][j] > 0:
                         self.trust_response_matrix[j][i] = accept_trust * token_value[i] 
+                        #print("agent", i, "token_value:", token_value[i], "response:", token_value[j])
                         if accept_trust > 0:
                             transition["response_messages_sent"] += 1
+
         # 3. Receive trust responses
         for i, trust_responses in enumerate(self.trust_response_matrix):
             neighborhood = info["neighbor_agents"][i]
@@ -319,7 +245,26 @@ class MATE(ActorCritic):
                 filtered_trust_responses = [trust_responses[x] for x in neighborhood if abs(trust_responses[x]) > 0]
                 if len(filtered_trust_responses) > 0:
                     transition["rewards"][i] += min(filtered_trust_responses)
+        
+        if self.agent1_well and self.agent2_well:
+            self.both_well += 1
+        elif self.agent1_well and not self.agent2_well:
+            self.one_well += 1
+        elif not self.agent1_well and self.agent2_well:
+            self.two_well += 1
+        elif not self.agent1_well and not self.agent2_well:
+            self.none_well += 1
+        else:
+            print("Implementation Error. Count Improve is neither 2,1 or 0", self.count_improve)
+        self.agent1_well = False  
+        self.agent2_well = False
         if done:
             self.last_rewards_observed = [[] for _ in range(self.nr_agents)]
-            print(token_value)
+            #print(token_value)
+
+            print("both: ", self.both_well, "one: ", self.one_well, "two: ", self.two_well, "none: ", self.none_well)
+            self.both_well = 0
+            self.one_well = 0
+            self.two_well = 0
+            self.none_well = 0
         return transition

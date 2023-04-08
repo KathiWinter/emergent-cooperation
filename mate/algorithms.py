@@ -230,6 +230,10 @@ def make(params):
         params["mate_mode"] = "td_error"
         params["token_mode"] = "meta-policy"
         return mate.MATE(params)
+    if algorithm_name == "MATE-TD-EARNING":
+        params["mate_mode"] = "td_error"
+        params["token_mode"] = "earning"
+        return mate.MATE(params)
     if algorithm_name == "MATE-TD-DEFECT_COMPLETE":
         params["mate_mode"] = "td_error"
         params["defect_mode"] = mate.DEFECT_ALL

@@ -1,6 +1,7 @@
 from os.path import join
 import mate.data as data
 import numpy
+import json
 
 def run_episode(env, controller, params, training_mode=True):
     done = False
@@ -9,7 +10,7 @@ def run_episode(env, controller, params, training_mode=True):
     joint_probs_history = []
     request_messages_sent = 0
     response_messages_sent = 0
-    token_history = -1
+    token_history = []
     while not done:
         joint_action, joint_probs = controller.policy(observations)
         next_observations, rewards, done, info = env.step(joint_action)
@@ -19,8 +20,7 @@ def run_episode(env, controller, params, training_mode=True):
             transition = controller.update(observations, joint_action, rewards, next_observations, done, info)
             request_messages_sent += transition["request_messages_sent"]
             response_messages_sent += transition["response_messages_sent"]
-            if transition["token_value"] > 0:
-                token_history = transition["token_value"]
+            token_history = transition["token_value"]
         observations = next_observations
     return {
         "discounted_returns": env.discounted_returns,
