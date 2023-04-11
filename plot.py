@@ -9,7 +9,18 @@ ALGORITHM_NAMES = {
     "IAC_": "Naive Learning",
     "Gifting-ZEROSUM_": "Gifting (Zero-Sum)",
     "Gifting-BUDGET_": "Gifting (Budget)",
-    "MATE-TD_": "MATE",
+    "MATE-TD_": "MATE 1",
+    "MATE-TD-T0.25": "MATE 0.25",
+    "MATE-TD-T0.5": "MATE 0.5",
+    "MATE-TD-T0.75": "MATE 0.75",
+    "MATE-TD-T1.5": "MATE 1.5",
+    "MATE-TD-T2": "MATE 2",
+    "MATE-TD-T2.5": "MATE 2.5",
+    "MATE-TD-T3": "MATE 3",
+    "MATE-TD-T4": "MATE 4",
+    "MATE-TD-T8": "MATE 8",
+    "MATE-TD-RANDOM": "MATE Random",
+    "MATE-TD-UCB": "MATE UCB",
     "MATE-REWARD_": "MATE (reward-based)",
     "LIO_": "LIO",
     "MATE-TD-DEFECT_COMPLETE_": "MATE (defect=Complete)",
@@ -75,9 +86,9 @@ filename_pdf = filename_prefix + ".pdf"
 data_prefix_pattern = params["data_prefix_pattern"]
 
 if baseline_comparison:
-    algorithm_info = [("b","MATE-TD_"), ("c","MATE-REWARD_"), ("r", "LIO_"), ("magenta","Gifting-ZEROSUM_"), ("darkorange", "Gifting-BUDGET_"), ("k","IAC_"), ("darkblue", "Random_")]
+    algorithm_info = [("b","MATE-TD_"), ("deeppink","MATE-TD-UCB"), ("sienna","MATE-TD-T0.25"), ("olive","MATE-TD-T0.5"), ("aqua","MATE-TD-T0.75"), ("tomato","MATE-TD-T1.5"), ("deepskyblue","MATE-TD-T2"), ("navy","MATE-TD-T2.5"), ("palegreen","MATE-TD-T3"), ("goldenrod","MATE-TD-T4"), ("seagreen","MATE-TD-T8"), ("c","MATE-REWARD_"), ("r", "LIO_"), ("magenta","Gifting-ZEROSUM_"), ("darkorange", "Gifting-BUDGET_"), ("k","IAC_"), ("darkblue", "Random_")]
 else:
-    algorithm_info = [("b","MATE-TD_"), ("purple","MATE-TD-DEFECT_COMPLETE_"), ("darkgray","MATE-TD-DEFECT_REQUEST_"), ("c","MATE-TD-DEFECT_RESPONSE_"), ("r", "LIO_"), ("k","IAC_")]
+    algorithm_info = [("b","MATE-TD_"), ("deeppink","MATE-TD-UCB"), ("sienna","MATE-TD-T0.25"), ("olive","MATE-TD-T0.5"), ("aqua","MATE-TD-T0.75"), ("tomato","MATE-TD-T1.5"), ("deepskyblue","MATE-TD-T2"), ("navy","MATE-TD-T2.5"), ("deepskyblue","MATE-TD-T2"), ("lawngreen","MATE-TD-T2.5"), ("palegreen","MATE-TD-T3"), ("goldenrod","MATE-TD-T4"), ("seagreen","MATE-TD-T8"), ("purple","MATE-TD-DEFECT_COMPLETE_"), ("darkgray","MATE-TD-DEFECT_REQUEST_"), ("c","MATE-TD-DEFECT_RESPONSE_"), ("r", "LIO_"), ("k","IAC_")]
 
 for color, algorithm_name in algorithm_info:
     params["data_prefix_pattern"] = data_prefix_pattern.format(
@@ -113,6 +124,7 @@ if params["domain_name"] in LEGEND_CONFIG and params["y_label"] == Y_LABEL["undi
 if not baseline_comparison and params["y_label"] == Y_LABEL["undiscounted_returns"]:
     legend = plot.legend()
 plot.tight_layout()
+ax.legend(bbox_to_anchor=(1.1, 1.05))
 ax.grid(which='both', linestyle='--')
 plot.savefig(join(path, filename), bbox_inches='tight')
 plot.savefig(join(path, filename_png), bbox_inches='tight')
