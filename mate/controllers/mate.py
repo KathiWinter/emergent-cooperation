@@ -49,23 +49,9 @@ class MATE(ActorCritic):
         self.best_value = [copy.copy(self.initial_value), copy.copy(self.initial_value)]
         self.last_token_value = [random.choice([0.25, 0.5, 1.0, 2.0, 4.0]),random.choice([0.25, 0.5, 1.0, 2.0, 4.0])]
         self.tokens_dict = [{}, {}]
-        self.Q_table = numpy.zeros((2, 36, 128)) 
-        self.Q_table_joint = numpy.negative(numpy.ones((2, 10, 10, 6)))
-        self.old_histories = None
-        self.old_rewards = numpy.zeros(self.nr_agents)
-        self.old_joint_action = numpy.zeros(self.nr_agents)
-        self.alpha = 0.8
-        self.step = 0
-        self.min = 0.0
         self.episode = 0
-        self.episode_return = [0, 0]
-        self.states = []
-        self.both_well = 0
-        self.agent1_well = False
-        self.agent2_well = False
-        self.none_well = 0
-        self.one_well = 0
-        self.two_well = 0
+        self.episode_return = numpy.zeros(self.nr_agents)
+        self.count_accept = numpy.zeros(self.nr_agents)
         
     def can_rely_on(self, agent_id, reward, history, next_history):
         if self.mate_mode == STATIC_MODE:
@@ -84,32 +70,6 @@ class MATE(ActorCritic):
             return reward + self.gamma*next_value - value >= 0
         if self.mate_mode == VALUE_DECOMPOSE_MODE:
             return False
-        
-        
-    def get_token(self, agent_id, reward, history, next_history):
-        history = torch.tensor(numpy.array([history]), dtype=torch.float32, device=self.device)
-        next_history = torch.tensor(numpy.array([next_history]), dtype=torch.float32, device=self.device)
-        value = self.get_values(agent_id, history)[0].item()
-        next_value = self.get_values(agent_id, next_history)[0].item()
-        token_value = abs(reward + self.gamma*next_value - value)
-        return token_value 
-    
-    def updateQTable_joint(self, agent_id, reward, agent0_new, agent1_new, coin0_new, coin1_new, agent0_last, agent1_last, coin0_last, coin1_last): 
-        
-        maxQ = max(self.Q_table_joint[agent_id, coin0_new, coin1_new, :5])
-        token = int(self.Q_table_joint[agent_id, coin0_last, coin1_last, 5])
-        # if(token == 0.25):
-        #     token = 0
-        # elif(token == 0.5):
-        #     token = 1
-        # elif(token == 1.0):
-        #     token = 2
-        # elif(token == 2.0):
-        #     token = 3
-        # elif(token == 4.0):
-        #     token = 4
-        self.Q_table_joint[agent_id,coin0_last, coin1_last, token] = self.Q_table_joint[agent_id, coin0_last, coin1_last, token] + (reward)
-
     
     def prepare_transition(self, joint_histories, joint_action, rewards, next_joint_histories, done, info):
         transition = super(MATE, self).prepare_transition(joint_histories, joint_action, rewards, next_joint_histories, done, info)
@@ -117,14 +77,18 @@ class MATE(ActorCritic):
         if self.token_mode == FIXED_TOKEN:
             token_value = numpy.ones(self.nr_agents)
         if self.token_mode == RANDOM_TOKEN:
-            rand_value= random.choice([0.25, 0.5, 1.0, 2.0, 4.0])
-            token_value = [rand_value, rand_value]#[random.choice([0.25, 0.5, 1.0, 2.0, 4.0]), random.choice([0.25, 0.5, 1.0, 2.0, 4.0])]
+            #rand_value = random.choice([0.25, 0.5, 1.0, 2.0, 4.0])
+            token_value = [random.choice([0.25, 0.5, 1.0, 2.0, 4.0]), random.choice([0.25, 0.5, 1.0, 2.0, 4.0])]
+            if done:
+                transition["token_value"] = token_value
         if self.token_mode == EARNING: 
-            token_value = numpy.zeros(self.nr_agents)
-            for i in range(self.nr_agents):
-                if sum(self.count_accept) != 0.0: 
-                    token_value[i] = self.count_accept[i] / sum(self.count_accept) * 4
-            transition["token_value"] = token_value
+            token_value = self.last_token_value
+            if done:
+                for i in range(self.nr_agents):
+                    if sum(self.count_accept) != 0.0: 
+                        token_value[i] = self.count_accept[i] / sum(self.count_accept) * 4
+                self.last_token_value = token_value
+                transition["token_value"] = token_value
         if self.token_mode == UCB:
             token_value = [0,0]
             for i in range(self.nr_agents):
@@ -143,7 +107,7 @@ class MATE(ActorCritic):
                     for token, stats in self.tokens_dict[i].items():
                         if(len(stats['rewards']) > 0):
                             mean_reward = sum(stats['rewards']) / len(stats['rewards'])
-                            di = numpy.sqrt((3/2 * numpy.log(self.step + 1)) / len(stats['rewards']))
+                            di = numpy.sqrt((3/2 * numpy.log(self.episode + 1)) / len(stats['rewards']))
                             upper_bound = mean_reward + di
                         else:
                             upper_bound = 1e400
@@ -158,7 +122,7 @@ class MATE(ActorCritic):
                     self.last_token_value[i] = token_value[i]
         
                     self.episode_return[i] = 0
-                    transition["token_value"] = token_value[i]
+            transition["token_value"] = token_value
                 
         if self.token_mode == EPSILON_GREEDY:
             self.episode_return += sum(rewards)
@@ -181,7 +145,6 @@ class MATE(ActorCritic):
                 p = random.uniform(0, 1)
                 if self.episode % 100 == 0 and self.epsilon > 0.3:
                        self.epsilon -= 0.1
-                       print("epsilon: ", self.epsilon)
                 if p < self.epsilon:
                     token_value = random.choice([0.25, 0.5, 1.0, 2.0, 4.0])
                 else:                 
@@ -204,10 +167,6 @@ class MATE(ActorCritic):
             requests_enabled = requests_enabled and self.sample_no_comm_failure()
             if requests_enabled and self.can_rely_on(i, reward, history, next_history): # Analyze the "winners" of that step
                 neighborhood = info["neighbor_agents"][i]
-                if i == 0:
-                    self.agent1_well = True
-                else:
-                    self.agent2_well = True
                 for j in neighborhood:
                     assert i != j
                     self.trust_request_matrix[j][i] += token_value[i]
@@ -219,7 +178,6 @@ class MATE(ActorCritic):
             respond_enabled = respond_enabled and self.sample_no_comm_failure()
             if request_receive_enabled[i]:
                 trust_requests = [self.trust_request_matrix[i][x] for x in neighborhood]
-                print(trust_requests)
                 if len(trust_requests) > 0:
                     transition["rewards"][i] += numpy.max(trust_requests)
 
@@ -231,8 +189,7 @@ class MATE(ActorCritic):
                 for j in neighborhood:
                     assert i != j
                     if self.trust_request_matrix[i][j] > 0:
-                        self.trust_response_matrix[j][i] = accept_trust * token_value[i] 
-                        #print("agent", i, "token_value:", token_value[i], "response:", token_value[j])
+                        self.trust_response_matrix[j][i] = accept_trust *token_value[i]   #random.choice([0.25, 0.5, 1.0, 2.0, 4.0]) #token_value[i] 
                         if accept_trust > 0:
                             transition["response_messages_sent"] += 1
 
@@ -244,27 +201,10 @@ class MATE(ActorCritic):
             if receive_enabled and len(neighborhood) > 0 and trust_responses.any():
                 filtered_trust_responses = [trust_responses[x] for x in neighborhood if abs(trust_responses[x]) > 0]
                 if len(filtered_trust_responses) > 0:
+                    self.count_accept[i] +=1
                     transition["rewards"][i] += min(filtered_trust_responses)
         
-        if self.agent1_well and self.agent2_well:
-            self.both_well += 1
-        elif self.agent1_well and not self.agent2_well:
-            self.one_well += 1
-        elif not self.agent1_well and self.agent2_well:
-            self.two_well += 1
-        elif not self.agent1_well and not self.agent2_well:
-            self.none_well += 1
-        else:
-            print("Implementation Error. Count Improve is neither 2,1 or 0", self.count_improve)
-        self.agent1_well = False  
-        self.agent2_well = False
         if done:
             self.last_rewards_observed = [[] for _ in range(self.nr_agents)]
-            #print(token_value)
-
-            print("both: ", self.both_well, "one: ", self.one_well, "two: ", self.two_well, "none: ", self.none_well)
-            self.both_well = 0
-            self.one_well = 0
-            self.two_well = 0
-            self.none_well = 0
+            self.count_accept == 0
         return transition
