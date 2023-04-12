@@ -44,7 +44,7 @@ class MATE(ActorCritic):
         self.trust_response_matrix = numpy.zeros((self.nr_agents, self.nr_agents), dtype=numpy.float32)
         self.defect_mode = get_param_or_default(params, "defect_mode", NO_DEFECT)
         self.token_mode = get_param_or_default(params, "token_mode", FIXED_TOKEN)
-        self.epsilon = get_param_or_default(params, "epsilon", 0.9)
+        self.epsilon = get_param_or_default(params, "epsilon", 0.1)
         self.initial_value = get_param_or_default(params, "initial_value", random.choice([0.25, 0.5, 1.0, 2.0, 4.0]))
         self.best_value = [copy.copy(self.initial_value), copy.copy(self.initial_value)]
         self.last_token_value = [random.choice([0.25, 0.5, 1.0, 2.0, 4.0]),random.choice([0.25, 0.5, 1.0, 2.0, 4.0])]
@@ -116,7 +116,7 @@ class MATE(ActorCritic):
                             max_upper_bound = upper_bound
                             self.best_value[i] = float(token)
                     p = random.uniform(0, 1)  
-                    if p < 0.2:
+                    if p < self.epsilon:
                         token_value[i] = random.choice([0.25, 0.5, 1.0, 2.0, 4.0])
                     else:                 
                         token_value[i] = self.best_value[i]       
@@ -190,7 +190,7 @@ class MATE(ActorCritic):
                 for j in neighborhood:
                     assert i != j
                     if self.trust_request_matrix[i][j] > 0:
-                        self.trust_response_matrix[j][i] = accept_trust *token_value[i]   #random.choice([0.25, 0.5, 1.0, 2.0, 4.0]) #token_value[i] 
+                        self.trust_response_matrix[j][i] = accept_trust * random.choice([0.25, 0.5, 1.0, 2.0, 4.0]) #token_value[i] 
                         if accept_trust > 0:
                             transition["response_messages_sent"] += 1
 
