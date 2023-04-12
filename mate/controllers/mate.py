@@ -89,6 +89,7 @@ class MATE(ActorCritic):
                         token_value[i] = self.count_accept[i] / sum(self.count_accept) * 4
                 self.last_token_value = token_value
                 transition["token_value"] = token_value
+                self.count_accept = numpy.zeros(self.nr_agents)
         if self.token_mode == UCB:
             token_value = [0,0]
             for i in range(self.nr_agents):
@@ -201,10 +202,10 @@ class MATE(ActorCritic):
             if receive_enabled and len(neighborhood) > 0 and trust_responses.any():
                 filtered_trust_responses = [trust_responses[x] for x in neighborhood if abs(trust_responses[x]) > 0]
                 if len(filtered_trust_responses) > 0:
-                    self.count_accept[i] +=1
                     transition["rewards"][i] += min(filtered_trust_responses)
+                    if(min(filtered_trust_responses)) > 0:
+                        self.count_accept[i] += 1
         
         if done:
             self.last_rewards_observed = [[] for _ in range(self.nr_agents)]
-            self.count_accept == 0
         return transition
