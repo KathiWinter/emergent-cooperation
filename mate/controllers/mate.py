@@ -184,13 +184,13 @@ class MATE(ActorCritic):
 
             if respond_enabled and len(neighborhood) > 0:
                 if self.can_rely_on(i, transition["rewards"][i], history, next_history):
-                    accept_trust = 1
+                    accept_trust = token_value[j]
                 else:
-                    accept_trust = -1
+                    accept_trust = -1 * random.choice([0.25, 0.5, 1.0, 2.0, 4.0])
                 for j in neighborhood:
                     assert i != j
                     if self.trust_request_matrix[i][j] > 0:
-                        self.trust_response_matrix[j][i] = accept_trust * random.choice([0.25, 0.5, 1.0, 2.0, 4.0]) #token_value[i] 
+                        self.trust_response_matrix[j][i] = accept_trust #accept_trust * token_value[i] #random.choice([0.25, 0.5, 1.0, 2.0, 4.0])
                         if accept_trust > 0:
                             transition["response_messages_sent"] += 1
 
