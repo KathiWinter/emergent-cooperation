@@ -104,11 +104,15 @@ class MATE(ActorCritic):
                     self.tokens_dict[i][str(token_value[i])]['rewards'].append(self.episode_return[i])
                     if(len(self.tokens_dict[i][str(token_value[i])]['rewards']) > 50):
                         self.tokens_dict[i][str(token_value[i])]['rewards'].pop(0) 
+                    
+                    trials = 0
+                    for token, stats in self.tokens_dict[i].items():
+                        trials += len(stats['rewards'])
                 
                     for token, stats in self.tokens_dict[i].items():
                         if(len(stats['rewards']) > 0):
                             mean_reward = sum(stats['rewards']) / len(stats['rewards'])
-                            di = numpy.sqrt((3/2 * numpy.log(self.episode + 1)) / len(stats['rewards']))
+                            di = numpy.sqrt((2 * numpy.log(trials)) / len(stats['rewards']))
                             upper_bound = mean_reward + di
                         else:
                             upper_bound = 1e400
@@ -184,13 +188,13 @@ class MATE(ActorCritic):
 
             if respond_enabled and len(neighborhood) > 0:
                 if self.can_rely_on(i, transition["rewards"][i], history, next_history):
-                    accept_trust = token_value[j]
+                    accept_trust = token_value[i]
                 else:
                     accept_trust = -1 * random.choice([0.25, 0.5, 1.0, 2.0, 4.0])
                 for j in neighborhood:
                     assert i != j
                     if self.trust_request_matrix[i][j] > 0:
-                        self.trust_response_matrix[j][i] = accept_trust #accept_trust * token_value[i] #random.choice([0.25, 0.5, 1.0, 2.0, 4.0])
+                        self.trust_response_matrix[j][i] = accept_trust #* token_value[i] #random.choice([0.25, 0.5, 1.0, 2.0, 4.0])
                         if accept_trust > 0:
                             transition["response_messages_sent"] += 1
 
