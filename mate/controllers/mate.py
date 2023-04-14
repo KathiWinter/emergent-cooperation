@@ -51,7 +51,7 @@ class MATE(ActorCritic):
         self.tokens_dict = [{}, {}]
         self.episode = 0
         self.episode_return = numpy.zeros(self.nr_agents)
-        self.count_accept = numpy.zeros(self.nr_agents)
+
         
     def can_rely_on(self, agent_id, reward, history, next_history):
         if self.mate_mode == STATIC_MODE:
@@ -75,7 +75,9 @@ class MATE(ActorCritic):
         transition = super(MATE, self).prepare_transition(joint_histories, joint_action, rewards, next_joint_histories, done, info)
 
         if self.token_mode == FIXED_TOKEN:
-            token_value = numpy.ones(self.nr_agents)
+            token_value = [self.token_value0, self.token_value1]
+            if done:
+                transition["token_value"] = token_value
         if self.token_mode == RANDOM_TOKEN:
             #rand_value = random.choice([0.25, 0.5, 1.0, 2.0, 4.0])
             token_value = [random.choice([0.25, 0.5, 1.0, 2.0, 4.0]), random.choice([0.25, 0.5, 1.0, 2.0, 4.0])]
@@ -188,13 +190,13 @@ class MATE(ActorCritic):
 
             if respond_enabled and len(neighborhood) > 0:
                 if self.can_rely_on(i, transition["rewards"][i], history, next_history):
-                    accept_trust = 1 * token_value[1-i]
+                    accept_trust = 1 
                 else:
-                    accept_trust = -1 *random.choice([0.25, 0.5, 1.0, 2.0, 4.0])
+                    accept_trust = -1
                 for j in neighborhood:
                     assert i != j
                     if self.trust_request_matrix[i][j] > 0:
-                        self.trust_response_matrix[j][i] = accept_trust #* token_value[i] #random.choice([0.25, 0.5, 1.0, 2.0, 4.0])
+                        self.trust_response_matrix[j][i] = accept_trust * token_value[i] 
                         if accept_trust > 0:
                             transition["response_messages_sent"] += 1
 
@@ -207,8 +209,6 @@ class MATE(ActorCritic):
                 filtered_trust_responses = [trust_responses[x] for x in neighborhood if abs(trust_responses[x]) > 0]
                 if len(filtered_trust_responses) > 0:
                     transition["rewards"][i] += min(filtered_trust_responses)
-                    if(min(filtered_trust_responses)) > 0:
-                        self.count_accept[i] += 1
         
         if done:
             self.last_rewards_observed = [[] for _ in range(self.nr_agents)]
