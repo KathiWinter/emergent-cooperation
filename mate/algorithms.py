@@ -195,6 +195,36 @@ def make(params):
         params["token_value-0"] = 2.0
         params["token_value-1"] = 4.0
         return mate.MATE(params)
+    if algorithm_name == "MATE-TD-INDIVIDUAL-E025":
+        params["mate_mode"] = "td_error"
+        params["token_mode"] = "fixed"
+        params["token_value-0"] = 0.25
+        params["token_value-1"] = 0.25
+        return mate.MATE(params)
+    if algorithm_name == "MATE-TD-INDIVIDUAL-E05":
+        params["mate_mode"] = "td_error"
+        params["token_mode"] = "fixed"
+        params["token_value-0"] = 0.5
+        params["token_value-1"] = 0.5
+        return mate.MATE(params)
+    if algorithm_name == "MATE-TD-INDIVIDUAL-E1":
+        params["mate_mode"] = "td_error"
+        params["token_mode"] = "fixed"
+        params["token_value-0"] = 1.0
+        params["token_value-1"] = 1.0
+        return mate.MATE(params)
+    if algorithm_name == "MATE-TD-INDIVIDUAL-E2":
+        params["mate_mode"] = "td_error"
+        params["token_mode"] = "fixed"
+        params["token_value-0"] = 2.0
+        params["token_value-1"] = 2.0
+        return mate.MATE(params)
+    if algorithm_name == "MATE-TD-INDIVIDUAL-E4":
+        params["mate_mode"] = "td_error"
+        params["token_mode"] = "fixed"
+        params["token_value-0"] = 4.0
+        params["token_value-1"] = 4.0
+        return mate.MATE(params)
     if algorithm_name == "MATE-TD-RANDOM-B":
         params["mate_mode"] = "td_error"
         params["token_mode"] = "random"
