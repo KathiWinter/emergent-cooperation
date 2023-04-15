@@ -52,7 +52,7 @@ class MATE(ActorCritic):
         self.episode = 0
         self.episode_return = numpy.zeros(self.nr_agents)
         self.count_accept = numpy.zeros(self.nr_agents)
-        
+
     def can_rely_on(self, agent_id, reward, history, next_history):
         if self.mate_mode == STATIC_MODE:
             is_empty = self.last_rewards_observed[agent_id]
@@ -188,13 +188,17 @@ class MATE(ActorCritic):
 
             if respond_enabled and len(neighborhood) > 0:
                 if self.can_rely_on(i, transition["rewards"][i], history, next_history):
-                    accept_trust = 1 * token_value[1-i]
+                    accept_trust = 1
                 else:
-                    accept_trust = -1 *random.choice([0.25, 0.5, 1.0, 2.0, 4.0])
+                    accept_trust = -1 
                 for j in neighborhood:
                     assert i != j
                     if self.trust_request_matrix[i][j] > 0:
-                        self.trust_response_matrix[j][i] = accept_trust #* token_value[i] #random.choice([0.25, 0.5, 1.0, 2.0, 4.0])
+                        if self.trust_request_matrix[j][i] > 0:
+                            self.trust_response_matrix[j][i] = accept_trust * token_value[1-i] #random.choice([0.25, 0.5, 1.0, 2.0, 4.0])
+                        else:
+                            if accept_trust > 0:
+                                self.trust_response_matrix[j][i] = accept_trust * random.choice([0.25, 0.5, 1.0, 2.0, 4.0])
                         if accept_trust > 0:
                             transition["response_messages_sent"] += 1
 
@@ -210,6 +214,7 @@ class MATE(ActorCritic):
                     if(min(filtered_trust_responses)) > 0:
                         self.count_accept[i] += 1
         
+
         if done:
             self.last_rewards_observed = [[] for _ in range(self.nr_agents)]
         return transition
