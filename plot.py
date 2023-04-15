@@ -20,6 +20,21 @@ ALGORITHM_NAMES = {
     "MATE-TD-T1.5": "MATE T-1.5",
     "MATE-TD-T2.5": "MATE T-2.5",
     "MATE-TD-T3": "MATE T-3",
+    "MATE-TD-INDIVIDUAL-1_": "MATE 0.25/0.5",
+    "MATE-TD-INDIVIDUAL-2": "MATE 0.25/1",
+    "MATE-TD-INDIVIDUAL-3": "MATE 0.25/2",
+    "MATE-TD-INDIVIDUAL-4": "MATE 0.25/4",
+    "MATE-TD-INDIVIDUAL-5": "MATE 0.5/1",
+    "MATE-TD-INDIVIDUAL-6": "MATE 0.5/2",
+    "MATE-TD-INDIVIDUAL-7": "MATE 0.5/4",
+    "MATE-TD-INDIVIDUAL-8": "MATE 1/2",
+    "MATE-TD-INDIVIDUAL-9": "MATE 1/4",
+    "MATE-TD-INDIVIDUAL-10": "MATE 2/4",
+    "MATE-TD-INDIVIDUAL-E1": "MATE 1/1",
+    "MATE-TD-INDIVIDUAL-E025": "MATE 0.25/0.25",
+    "MATE-TD-INDIVIDUAL-E05": "MATE 0.5/0.5",
+    "MATE-TD-INDIVIDUAL-E2": "MATE 2/2",
+    "MATE-TD-INDIVIDUAL-E4": "MATE 4/4",
     "MATE-TD-RANDOM": "MATE (random)",
     "MATE-TD-EPSGREEDY": "MATE (epsilon-greedy)",
     "MATE-TD-UCB": "MATE (UCB)",
@@ -89,9 +104,15 @@ filename_pdf = filename_prefix + ".pdf"
 data_prefix_pattern = params["data_prefix_pattern"]
 
 if baseline_comparison:
-    algorithm_info = [("sienna","MATE-TD_"), ("sienna","MATE-TD-T1.5"), ("sienna","MATE-TD-T2"), ("sienna","MATE-TD-T2.5"), ("deeppink","MATE-TD-RANDOM"), ("turquoise","MATE-TD-EARNING"), ("gray","IAC_")]
+    algorithm_info = [("sienna","MATE-TD_"), ("lightcoral","MATE-TD-INDIVIDUAL-1_"), ("lightsalmon","MATE-TD-INDIVIDUAL-2"), ("peru","MATE-TD-INDIVIDUAL-3"), ("darkorange","MATE-TD-INDIVIDUAL-4"), ("limegreen","MATE-TD-INDIVIDUAL-5"), ("lightseagreen","MATE-TD-INDIVIDUAL-6"), ("deepskyblue","MATE-TD-INDIVIDUAL-7"), ("slategray","MATE-TD-INDIVIDUAL-8"), ("slateblue","MATE-TD-INDIVIDUAL-9"), ("magenta","MATE-TD-INDIVIDUAL-10"), ("deeppink","MATE-TD-RANDOM"), ("turquoise","MATE-TD-EARNING"), ("gray","IAC_")]
+    #algorithm_info = [("sienna","MATE-TD_"), ("lightcoral","MATE-TD-INDIVIDUAL-1_"), ("lightsalmon","MATE-TD-INDIVIDUAL-2"), ("peru","MATE-TD-INDIVIDUAL-3"), ("darkorange","MATE-TD-INDIVIDUAL-4"), ("limegreen","MATE-TD-INDIVIDUAL-5"), ("lightseagreen","MATE-TD-INDIVIDUAL-6"), ("deepskyblue","MATE-TD-INDIVIDUAL-7"), ("deeppink","MATE-TD-RANDOM"), ("turquoise","MATE-TD-EARNING"), ("gray","IAC_")]
+    #algorithm_info = [("sienna","MATE-TD_"), ("deeppink","MATE-TD-RANDOM"), ("gray","IAC_")]
+    #algorithm_info = [("sienna","MATE-TD_"), ("lightcoral","MATE-TD-INDIVIDUAL-E1"), ("peru","MATE-TD-INDIVIDUAL-E025"), ("deeppink","MATE-TD-RANDOM"), ("darkorange","MATE-TD-INDIVIDUAL-E05"), ("limegreen","MATE-TD-INDIVIDUAL-E2"), ("lightseagreen","MATE-TD-INDIVIDUAL-E4"), ("gray","IAC_")]
 else:
-    algorithm_info = [("sienna","MATE-TD_"), ("sienna","MATE-TD-T1.5"), ("sienna","MATE-TD-T2"), ("sienna","MATE-TD-T2.5"), ("deeppink","MATE-TD-RANDOM"), ("turquoise","MATE-TD-EARNING"), ("gray","IAC_")]
+    algorithm_info = [("sienna","MATE-TD_"), ("lightcoral","MATE-TD-INDIVIDUAL-1_"), ("lightsalmon","MATE-TD-INDIVIDUAL-2"), ("peru","MATE-TD-INDIVIDUAL-3"), ("darkorange","MATE-TD-INDIVIDUAL-4"), ("limegreen","MATE-TD-INDIVIDUAL-5"), ("lightseagreen","MATE-TD-INDIVIDUAL-6"), ("deepskyblue","MATE-TD-INDIVIDUAL-7"), ("slategray","MATE-TD-INDIVIDUAL-8"), ("slateblue","MATE-TD-INDIVIDUAL-9"), ("magenta","MATE-TD-INDIVIDUAL-10"), ("deeppink","MATE-TD-RANDOM"), ("turquoise","MATE-TD-EARNING"), ("gray","IAC_")]
+    #algorithm_info = [("sienna","MATE-TD_"), ("lightcoral","MATE-TD-INDIVIDUAL-1_"), ("lightsalmon","MATE-TD-INDIVIDUAL-2"), ("peru","MATE-TD-INDIVIDUAL-3"), ("darkorange","MATE-TD-INDIVIDUAL-4"), ("limegreen","MATE-TD-INDIVIDUAL-5"), ("lightseagreen","MATE-TD-INDIVIDUAL-6"), ("deepskyblue","MATE-TD-INDIVIDUAL-7"), ("deeppink","MATE-TD-RANDOM"), ("turquoise","MATE-TD-EARNING"), ("gray","IAC_")]
+    #algorithm_info = [("sienna","MATE-TD_"), ("deeppink","MATE-TD-RANDOM"), ("gray","IAC_")]
+    #algorithm_info = [("sienna","MATE-TD_"), ("lightcoral","MATE-TD-INDIVIDUAL-E1"), ("peru","MATE-TD-INDIVIDUAL-E025"), ("deeppink","MATE-TD-RANDOM"), ("darkorange","MATE-TD-INDIVIDUAL-E05"), ("limegreen","MATE-TD-INDIVIDUAL-E2"), ("lightseagreen","MATE-TD-INDIVIDUAL-E4"), ("gray","IAC_")]
 
 for color, algorithm_name in algorithm_info:
     params["data_prefix_pattern"] = data_prefix_pattern.format(

@@ -75,7 +75,9 @@ class MATE(ActorCritic):
         transition = super(MATE, self).prepare_transition(joint_histories, joint_action, rewards, next_joint_histories, done, info)
 
         if self.token_mode == FIXED_TOKEN:
-            token_value = numpy.ones(self.nr_agents)
+            token_value = [self.token_value0, self.token_value1]
+            if done:
+                transition["token_value"] = token_value
         if self.token_mode == RANDOM_TOKEN:
             #rand_value = random.choice([0.25, 0.5, 1.0, 2.0, 4.0])
             token_value = [random.choice([0.25, 0.5, 1.0, 2.0, 4.0]), random.choice([0.25, 0.5, 1.0, 2.0, 4.0])]
@@ -195,7 +197,7 @@ class MATE(ActorCritic):
                     assert i != j
                     if self.trust_request_matrix[i][j] > 0:
                         if self.trust_request_matrix[j][i] > 0:
-                            self.trust_response_matrix[j][i] = accept_trust * token_value[1-i] #random.choice([0.25, 0.5, 1.0, 2.0, 4.0])
+                            self.trust_response_matrix[j][i] = accept_trust * token_value[j]
                         else:
                             if accept_trust > 0:
                                 self.trust_response_matrix[j][i] = accept_trust * random.choice([0.25, 0.5, 1.0, 2.0, 4.0])
