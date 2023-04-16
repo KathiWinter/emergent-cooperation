@@ -80,9 +80,10 @@ class MATE(ActorCritic):
                 transition["token_value"] = token_value
         if self.token_mode == RANDOM_TOKEN:
             #rand_value = random.choice([0.25, 0.5, 1.0, 2.0, 4.0])
-            token_value = [random.choice([0.25, 0.5, 1.0, 2.0, 4.0]), random.choice([0.25, 0.5, 1.0, 2.0, 4.0])]
-            if done:
-                transition["token_value"] = token_value
+            #token_value = [random.choice([0.25, 0.5, 1.0, 2.0, 4.0]), random.choice([0.25, 0.5, 1.0, 2.0, 4.0])]
+            # if done:
+            #     transition["token_value"] = token_value
+            pass
         if self.token_mode == EARNING: 
             token_value = self.last_token_value
             if done:
@@ -177,7 +178,7 @@ class MATE(ActorCritic):
                 for j in neighborhood:
                     assert i != j
 
-                    self.trust_request_matrix[j][i] += token_value[i][0]
+                    self.trust_request_matrix[j][i] += random.choice([0.25, 0.5, 1.0, 2.0, 4.0])
                     transition["request_messages_sent"] += 1
         # 2. Send trust responses
         for i, history, next_history in zip(range(self.nr_agents), joint_histories, next_joint_histories):
@@ -199,14 +200,14 @@ class MATE(ActorCritic):
                     if self.trust_request_matrix[i][j] > 0:
                         if self.trust_request_matrix[j][i] > 0:
                             ## Reciprocity
-                            self.trust_response_matrix[j][i] = accept_trust * token_value[i][1]
+                            self.trust_response_matrix[j][i] = accept_trust * random.choice([0.25, 0.5, 1.0, 2.0, 4.0])
                         else:
                             ## No own Request
                             if accept_trust < 0:
                                 #reject
-                                self.trust_response_matrix[j][i] = accept_trust * token_value[i][2] 
+                                self.trust_response_matrix[j][i] = accept_trust * random.choice([0.25, 0.5, 1.0, 2.0, 4.0])
                             else:
-                                self.trust_response_matrix[j][i] = accept_trust * token_value[i][3]
+                                self.trust_response_matrix[j][i] = accept_trust * random.choice([0.25, 0.5, 1.0, 2.0, 4.0])
                         if accept_trust > 0:
                             transition["response_messages_sent"] += 1
 
