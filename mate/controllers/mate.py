@@ -46,8 +46,8 @@ class MATE(ActorCritic):
         self.token_mode = get_param_or_default(params, "token_mode", FIXED_TOKEN)
         self.epsilon = get_param_or_default(params, "epsilon", 0.1)
         self.initial_value = get_param_or_default(params, "initial_value", random.choice([0.25, 0.5, 1.0, 2.0, 4.0]))
-        self.best_value = [copy.copy(self.initial_value), copy.copy(self.initial_value)]
-        self.last_token_value = [random.choice([0.25, 0.5, 1.0, 2.0, 4.0]),random.choice([0.25, 0.5, 1.0, 2.0, 4.0])]
+        self.best_value = [[0,0,0,0], [0,0,0,0]]
+        self.last_token_value = [[random.choice([0.25, 0.5, 1.0, 2.0, 4.0]), random.choice([0.25, 0.5, 1.0, 2.0, 4.0]), random.choice([0.25, 0.5, 1.0, 2.0, 4.0]), random.choice([0.25, 0.5, 1.0, 2.0, 4.0])], [random.choice([0.25, 0.5, 1.0, 2.0, 4.0]), random.choice([0.25, 0.5, 1.0, 2.0, 4.0]), random.choice([0.25, 0.5, 1.0, 2.0, 4.0]), random.choice([0.25, 0.5, 1.0, 2.0, 4.0])]]
         self.tokens_dict = [{}, {}]
         self.episode = 0
         self.episode_return = numpy.zeros(self.nr_agents)
@@ -93,7 +93,7 @@ class MATE(ActorCritic):
                 transition["token_value"] = token_value
                 self.count_accept = numpy.zeros(self.nr_agents)
         if self.token_mode == UCB:
-            token_value = [0,0]
+            token_value = [[0,0,0,0], [0,0,0,0]]
             for i in range(self.nr_agents):
                 self.episode_return[i] += rewards[i]
                 token_value[i] = self.last_token_value[i]
@@ -101,11 +101,11 @@ class MATE(ActorCritic):
                 self.episode += 1
                 for i in range(self.nr_agents):
                     max_upper_bound = 0
-                    if(str(token_value[i]) not in self.tokens_dict[i]):
-                        self.tokens_dict[i][str(token_value[i])] = {'rewards': []} 
-                    self.tokens_dict[i][str(token_value[i])]['rewards'].append(self.episode_return[i])
-                    if(len(self.tokens_dict[i][str(token_value[i])]['rewards']) > 50):
-                        self.tokens_dict[i][str(token_value[i])]['rewards'].pop(0) 
+                    if(tuple(token_value[i]) not in self.tokens_dict[i]):
+                        self.tokens_dict[i][tuple(token_value[i])] = {'rewards': []} 
+                    self.tokens_dict[i][tuple(token_value[i])]['rewards'].append(self.episode_return[i])
+                    if(len(self.tokens_dict[i][tuple(token_value[i])]['rewards']) > 50):
+                        self.tokens_dict[i][tuple(token_value[i])]['rewards'].pop(0) 
                     
                     trials = 0
                     for token, stats in self.tokens_dict[i].items():
@@ -120,10 +120,10 @@ class MATE(ActorCritic):
                             upper_bound = 1e400
                         if(upper_bound > max_upper_bound):
                             max_upper_bound = upper_bound
-                            self.best_value[i] = float(token)
+                            self.best_value[i] = list(token)
                     p = random.uniform(0, 1)  
                     if p < self.epsilon:
-                        token_value[i] = random.choice([0.25, 0.5, 1.0, 2.0, 4.0])
+                        token_value[i] = [random.choice([0.25, 0.5, 1.0, 2.0, 4.0]), random.choice([0.25, 0.5, 1.0, 2.0, 4.0]), random.choice([0.25, 0.5, 1.0, 2.0, 4.0]), random.choice([0.25, 0.5, 1.0, 2.0, 4.0])]
                     else:                 
                         token_value[i] = self.best_value[i]       
                     self.last_token_value[i] = token_value[i]
@@ -176,7 +176,8 @@ class MATE(ActorCritic):
                 neighborhood = info["neighbor_agents"][i]
                 for j in neighborhood:
                     assert i != j
-                    self.trust_request_matrix[j][i] += token_value[i]
+
+                    self.trust_request_matrix[j][i] += token_value[i][0]
                     transition["request_messages_sent"] += 1
         # 2. Send trust responses
         for i, history, next_history in zip(range(self.nr_agents), joint_histories, next_joint_histories):
@@ -198,10 +199,14 @@ class MATE(ActorCritic):
                     if self.trust_request_matrix[i][j] > 0:
                         if self.trust_request_matrix[j][i] > 0:
                             ## Reciprocity
-                            self.trust_response_matrix[j][i] = accept_trust * token_value[j] 
+                            self.trust_response_matrix[j][i] = accept_trust * token_value[i][1]
                         else:
                             ## No own Request
-                            self.trust_response_matrix[j][i] = accept_trust * token_value[i]
+                            if accept_trust < 0:
+                                #reject
+                                self.trust_response_matrix[j][i] = accept_trust * token_value[i][2] 
+                            else:
+                                self.trust_response_matrix[j][i] = accept_trust * token_value[i][3]
                         if accept_trust > 0:
                             transition["response_messages_sent"] += 1
 
