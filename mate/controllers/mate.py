@@ -39,9 +39,9 @@ class MATE(ActorCritic):
         self.defect_mode = get_param_or_default(params, "defect_mode", NO_DEFECT)
         self.token_mode = get_param_or_default(params, "token_mode", FIXED_TOKEN)
         self.epsilon = get_param_or_default(params, "epsilon", 0.1)
-        self.initial_value = get_param_or_default(params, "initial_value", random.choice([0.0, 1.0, 2.0, 4.0]))
+        self.initial_value = get_param_or_default(params, "initial_value", random.choice([0.25, 0.5, 1.0, 2.0, 4.0]))
         self.best_value = [copy.copy(self.initial_value), copy.copy(self.initial_value)]
-        self.last_token_value = [random.choice([0.0, 1.0, 2.0, 4.0]),random.choice([0.0, 1.0, 2.0, 4.0])]
+        self.last_token_value = [random.choice([0.25, 0.5, 1.0, 2.0, 4.0]),random.choice([0.25, 0.5, 1.0, 2.0, 4.0])]
         self.tokens_dict = [{}, {}]
         self.episode = 0
         self.episode_return = numpy.zeros(self.nr_agents)
@@ -110,13 +110,13 @@ class MATE(ActorCritic):
                             self.best_value[i] = float(token)
                     p = random.uniform(0, 1)  
                     if p < self.epsilon:
-                        token_value[i] = random.choice([0.0, 1.0, 2.0, 4.0])
+                        token_value[i] = random.choice([0.25, 0.5, 1.0, 2.0, 4.0])
                     else:                 
                         token_value[i] = self.best_value[i]       
                     self.episode_return[i] = 0
                 self.last_token_value = token_value
                 transition["token_value"] = token_value
-                print(token_value)
+                
                 
         if self.token_mode == EPSILON_GREEDY:
             token_value = self.last_token_value
@@ -184,8 +184,6 @@ class MATE(ActorCritic):
                     assert i != j
                     if self.trust_request_matrix[i][j] > 0:
                         self.trust_response_matrix[j][i] = accept_trust * token_value[i] 
-                        # if not self.can_rely_on(i, reward, history, next_history):
-                        #     self.trust_response_matrix[j][i] = accept_trust * token_value[j] 
                         if accept_trust > 0:
                             transition["response_messages_sent"] += 1
 
