@@ -10,7 +10,7 @@ ALGORITHM_NAMES = {
     "Gifting-ZEROSUM_": "Gifting (Zero-Sum)",
     "Gifting-BUDGET_": "Gifting (Budget)",
     "MATE-TD_": "MATE",
-    "MATE-REWARD_": "MATE (reward-based)",
+    "MATE-TD-RANDOM": "Random)",
     "LIO_": "LIO",
     "MATE-TD-DEFECT_COMPLETE_": "MATE (defect=Complete)",
     "MATE-TD-DEFECT_REQUEST_": "MATE (defect=Request)",
@@ -75,9 +75,9 @@ filename_pdf = filename_prefix + ".pdf"
 data_prefix_pattern = params["data_prefix_pattern"]
 
 if baseline_comparison:
-    algorithm_info = [("b","MATE-TD_"), ("c","MATE-REWARD_"), ("r", "LIO_"), ("magenta","Gifting-ZEROSUM_"), ("darkorange", "Gifting-BUDGET_"), ("k","IAC_"), ("darkblue", "Random_")]
+    algorithm_info = [("b","MATE-TD_"), ("c","MATE-TD-RANDOM"), ("r", "LIO_"), ("magenta","Gifting-ZEROSUM_"), ("darkorange", "Gifting-BUDGET_"), ("k","IAC_"), ("darkblue", "Random_")]
 else:
-    algorithm_info = [("b","MATE-TD_"), ("purple","MATE-TD-DEFECT_COMPLETE_"), ("darkgray","MATE-TD-DEFECT_REQUEST_"), ("c","MATE-TD-DEFECT_RESPONSE_"), ("r", "LIO_"), ("k","IAC_")]
+    algorithm_info = [("b","MATE-TD_"), ("c","MATE-TD-RANDOM"), ("purple","MATE-TD-DEFECT_COMPLETE_"), ("darkgray","MATE-TD-DEFECT_REQUEST_"), ("c","MATE-TD-DEFECT_RESPONSE_"), ("r", "LIO_"), ("k","IAC_")]
 
 for color, algorithm_name in algorithm_info:
     params["data_prefix_pattern"] = data_prefix_pattern.format(

@@ -67,7 +67,7 @@ class MATE(ActorCritic):
         if self.token_mode == RANDOM_TOKEN:
             token_value = [0,0]
             for i in range(self.nr_agents):
-                token_value[i] = random.choice([0.25, 0.5, 1, 2, 4])
+                token_value[i] = random.choice([0.25, 0.5, 1, 2, 4, 5, 6, 7, 8, 9])
         if self.token_mode == EPSILON_GREEDY:  
             original_rewards = [r for r in rewards]
             for i, reward, history, next_history in zip(range(self.nr_agents), original_rewards, joint_histories, next_joint_histories):
@@ -109,13 +109,13 @@ class MATE(ActorCritic):
                     transition["rewards"][i] += numpy.max(trust_requests)
             if respond_enabled and len(neighborhood) > 0:
                 if self.can_rely_on(i, transition["rewards"][i], history, next_history):
-                    accept_trust = +1
+                    accept_trust = 1 * token_value[i]
                 else:
-                    accept_trust = -1
+                    accept_trust = -1 * random.choice([0.25, 0.5, 1, 2, 4, 5, 6, 7, 8, 9])
                 for j in neighborhood:
                     assert i != j
                     if self.trust_request_matrix[i][j] > 0:
-                        self.trust_response_matrix[j][i] = accept_trust * token_value[j]
+                        self.trust_response_matrix[j][i] = accept_trust 
                         if accept_trust > 0:
                             transition["response_messages_sent"] += 1
         # 3. Receive trust responses
