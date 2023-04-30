@@ -101,7 +101,8 @@ class Controller:
             "done": done,
             "joint_old_probs":joint_old_probs,
             "request_messages_sent": 0,
-            "response_messages_sent": 0}
+            "response_messages_sent": 0,
+            "token_value": []}
 
     def update_step(self):
         pass
