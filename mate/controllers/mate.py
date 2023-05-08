@@ -144,12 +144,12 @@ class MATE(ActorCritic):
                             if(str(token_value) not in self.tokens_dict[i]):
                                 self.tokens_dict[i][str(token_value)] = {'rewards': []} 
                             self.tokens_dict[i][str(token_value)]['rewards'].append(self.episode_return[i])
-                            if(len(self.tokens_dict[i][str(token_value)]['rewards']) > 20):
+                            if(len(self.tokens_dict[i][str(token_value)]['rewards']) > 50):
                                 self.tokens_dict[i][str(token_value)]['rewards'].pop(0)
                             max_upper_bound = -numpy.inf
                             for token, stats in self.tokens_dict[i].items():
                                 if(len(stats['rewards']) > 0):
-                                    mean_reward = numpy.sum(stats['rewards']) / len(stats['rewards'])
+                                    mean_reward = numpy.sum(stats['rewards']) / len(stats['rewards'])#numpy.median(stats['rewards']) #numpy.sum(stats['rewards']) / len(stats['rewards'])
                                     di = numpy.sqrt((3/2 * numpy.log(self.episode + 1)) / len(stats['rewards']))
                                     upper_bound = mean_reward + di
                                     #print("token: ", token, "mean reward: ", mean_reward)
