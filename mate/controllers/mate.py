@@ -158,12 +158,18 @@ class MATE(ActorCritic):
                                 if(upper_bound > max_upper_bound):
                                     max_upper_bound = upper_bound
                                     self.best_value[i] = float(token)
-                        print("best value:", self.best_value, "token_value: ", token_value)
+                        #print("best value:", self.best_value, "token_value: ", token_value)
                         p = random.uniform(0, 1) 
                         if p < self.epsilon: 
                             token_value = random.choice([0.25, 0.5, 1.0, 2.0, 4.0])
                         else:                 
-                            token_value = sum(self.best_value)/self.nr_agents 
+                            min_diff = numpy.inf
+                            rounded_token = 0
+                            for x in [0.25, 0.5, 1.0, 2.0, 4.0]:
+                                if abs(x-sum(self.best_value)/self.nr_agents) < min_diff:
+                                    min_diff = abs(x-sum(self.best_value)/self.nr_agents)
+                                    rounded_token = x
+                            token_value = rounded_token #sum(self.best_value)/self.nr_agents 
                         self.last_token_value = token_value
             
                         self.episode_return = 0
