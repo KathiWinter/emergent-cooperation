@@ -150,9 +150,11 @@ class MATE(ActorCritic):
                             for token, stats in self.tokens_dict[i].items():
                                 if(len(stats['rewards']) > 0):
                                     mean_reward = numpy.sum(stats['rewards']) / len(stats['rewards'])#numpy.median(stats['rewards']) #numpy.sum(stats['rewards']) / len(stats['rewards'])
-                                    di = numpy.sqrt((3/2 * numpy.log(self.episode + 1)) / len(stats['rewards']))
+                                    di = numpy.sqrt((2 * numpy.log(self.episode)) / len(stats['rewards']))
                                     upper_bound = mean_reward + di
-                                    #print("token: ", token, "mean reward: ", mean_reward)
+                                    # if token == "1.0":
+                                    #     print(stats['rewards'], mean_reward)
+                                    #print("token: ", token, "mean reward+di: ", mean_reward+di)
                                 else:
                                     upper_bound = 1e400
                                 if(upper_bound > max_upper_bound):
@@ -163,13 +165,7 @@ class MATE(ActorCritic):
                         if p < self.epsilon: 
                             token_value = random.choice([0.25, 0.5, 1.0, 2.0, 4.0])
                         else:                 
-                            min_diff = numpy.inf
-                            rounded_token = 0
-                            for x in [0.25, 0.5, 1.0, 2.0, 4.0]:
-                                if abs(x-sum(self.best_value)/self.nr_agents) < min_diff:
-                                    min_diff = abs(x-sum(self.best_value)/self.nr_agents)
-                                    rounded_token = x
-                            token_value = rounded_token #sum(self.best_value)/self.nr_agents 
+                            token_value = numpy.median(self.best_value)
                         self.last_token_value = token_value
             
                         self.episode_return = 0
