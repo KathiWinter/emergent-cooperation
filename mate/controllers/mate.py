@@ -49,6 +49,7 @@ class MATE(ActorCritic):
         self.best_value = [random.choice([0.25, 0.5, 1.0, 2.0, 4.0]) for x in range(self.nr_agents)]
         self.last_best_value = self.best_value
         self.last_token_value = random.choice([0.25, 0.5, 1.0, 2.0, 4.0])#self.token_value
+        self.token_values = [0.25, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0]
 
     def can_rely_on(self, agent_id, reward, history, next_history):
         if self.mate_mode == STATIC_MODE:
@@ -137,6 +138,8 @@ class MATE(ActorCritic):
         if self.token_mode == UCB:
                     self.episode_return += rewards
                     token_value = self.last_token_value
+                    if token_value not in self.token_values:
+                        self.token_values.append(token_value)
                     if done:
                         self.episode += 1 
                         
@@ -150,7 +153,7 @@ class MATE(ActorCritic):
                             for token, stats in self.tokens_dict[i].items():
                                 if(len(stats['rewards']) > 0):
                                     mean_reward = numpy.sum(stats['rewards']) / len(stats['rewards'])#numpy.median(stats['rewards']) #numpy.sum(stats['rewards']) / len(stats['rewards'])
-                                    di = numpy.sqrt((2 * numpy.log(self.episode)) / len(stats['rewards']))
+                                    di = numpy.sqrt((3/2 * numpy.log(self.episode)) / len(stats['rewards']))
                                     upper_bound = mean_reward + di
                                     # if token == "1.0":
                                     #     print(stats['rewards'], mean_reward)
@@ -160,10 +163,11 @@ class MATE(ActorCritic):
                                 if(upper_bound > max_upper_bound):
                                     max_upper_bound = upper_bound
                                     self.best_value[i] = float(token)
-                        #print("best value:", self.best_value, "token_value: ", token_value)
+                                    #print("best value:", self.best_value[i], "upper bound: ", upper_bound)
+                        print("best value:", self.best_value, "token_value: ", token_value)
                         p = random.uniform(0, 1) 
                         if p < self.epsilon: 
-                            token_value = random.choice([0.25, 0.5, 1.0, 2.0, 4.0])
+                            token_value = random.choice(self.token_values)#random.choice([0.25, 0.5, 1.0, 2.0, 4.0])
                         else:                 
                             token_value = numpy.median(self.best_value)
                         self.last_token_value = token_value
