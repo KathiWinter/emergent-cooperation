@@ -167,7 +167,7 @@ class MATE(ActorCritic):
                         print("best value:", self.best_value, "token_value: ", token_value)
                         p = random.uniform(0, 1) 
                         if p < self.epsilon: 
-                            token_value = random.choice(self.token_values)#random.choice([0.25, 0.5, 1.0, 2.0, 4.0])
+                            token_value = random.choice([0.25, 0.5, 1.0, 2.0, 4.0])
                         else:                 
                             token_value = numpy.median(self.best_value)
                         self.last_token_value = token_value
@@ -175,7 +175,7 @@ class MATE(ActorCritic):
                         self.episode_return = 0
                         transition["token_value"] = token_value
                         
-                        if self.episode % 100 == 0 and self.epsilon > 0.2:
+                        if self.episode % 300 == 0 and self.epsilon > 0.2:
                             self.epsilon -= 0.1
 
 
