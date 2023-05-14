@@ -49,8 +49,11 @@ class MATE(ActorCritic):
         self.best_value = [random.choice([0.25, 0.5, 1.0, 2.0, 4.0]) for x in range(self.nr_agents)]
         self.last_best_value = self.best_value
         self.last_token_value = random.choice([0.25, 0.5, 1.0, 2.0, 4.0])#self.token_value
-        self.token_values = [0.25, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0]
-
+        self.token_values = [0.25, 0.5, 1.0, 2.0, 4.0]
+        self.gamma = 0.3
+        self.Nt = {}
+        self.Xs = {}
+        self.tokens_record = []
     def can_rely_on(self, agent_id, reward, history, next_history):
         if self.mate_mode == STATIC_MODE:
             is_empty = self.last_rewards_observed[agent_id]
@@ -75,29 +78,8 @@ class MATE(ActorCritic):
         
         if self.token_mode == FIXED:
             token_value = self.token_value
-            # token_value = self.last_token_value
-            # for i in range(self.nr_agents):
-            #     self.rewards[i].append(rewards[i])
-            #     if len(self.rewards[i]) > 1000:
-            #         self.rewards[i].pop(0)
-  
-            # if done:
-            #     mean_reward = 0
-            #     for i in range(self.nr_agents):
-            #         mean_reward += sum(self.rewards[i])/len(self.rewards[i])
-  
-            #     token_value = max(mean_reward * 10, 0)
-            #     print(token_value)
-            # if self.epoch < 200:
-            #     token_value = 1
-            # else:
-            #     token_value = 0.25
-            # if done:
-            #     self.episode += 1
-            #     if self.episode % 10 == 0:
-            #         self.epoch += 1
-            #     print(token_value)
-            
+    
+
         if self.token_mode == RANDOM:
             token_value = random.choice(self.token_range)
         # if self.token_mode == UCB:
@@ -142,42 +124,46 @@ class MATE(ActorCritic):
                         self.token_values.append(token_value)
                     if done:
                         self.episode += 1 
-                        
-                        for i in range(self.nr_agents):
-                            if(str(token_value) not in self.tokens_dict[i]):
-                                self.tokens_dict[i][str(token_value)] = {'rewards': []} 
-                            self.tokens_dict[i][str(token_value)]['rewards'].append(self.episode_return[i])
-                            if(len(self.tokens_dict[i][str(token_value)]['rewards']) > 50):
-                                self.tokens_dict[i][str(token_value)]['rewards'].pop(0)
-                            max_upper_bound = -numpy.inf
-                            for token, stats in self.tokens_dict[i].items():
-                                if(len(stats['rewards']) > 0):
-                                    mean_reward = numpy.sum(stats['rewards']) / len(stats['rewards'])#numpy.median(stats['rewards']) #numpy.sum(stats['rewards']) / len(stats['rewards'])
-                                    di = numpy.sqrt((3/2 * numpy.log(self.episode)) / len(stats['rewards']))
-                                    upper_bound = mean_reward + di
-                                    # if token == "1.0":
-                                    #     print(stats['rewards'], mean_reward)
-                                    #print("token: ", token, "mean reward+di: ", mean_reward+di)
-                                else:
-                                    upper_bound = 1e400
-                                if(upper_bound > max_upper_bound):
-                                    max_upper_bound = upper_bound
-                                    self.best_value[i] = float(token)
-                                    #print("best value:", self.best_value[i], "upper bound: ", upper_bound)
-                        print("best value:", self.best_value, "token_value: ", token_value)
-                        p = random.uniform(0, 1) 
-                        if p < self.epsilon: 
-                            token_value = random.choice([0.25, 0.5, 1.0, 2.0, 4.0])
-                        else:                 
-                            token_value = numpy.median(self.best_value)
-                        self.last_token_value = token_value
-            
+                        if self.episode <= 50:
+                            token_value = self.token_values[self.episode%len(self.token_values)]
+                            self.Nt[str(token_value)] = {'discount': 0}
+                            self.Xs[str(token_value)] = {'rewards': 0}
+                            self.tokens_record.append([token_value, self.episode_return])
+                        else:
+                            self.tokens_record.append([token_value, self.episode_return])
+                            step = 0
+                            for record, rewards in self.tokens_record:
+                                step += 1
+                                # if(str(record[0]) not in self.Nt):
+                                #     self.Nt[str(record[0])] = {'discount': 0}
+                                # if(str(record[0]) not in self.Xt):
+                                #     self.Xt[str(record[0])] = {'rewards': 0}
+                                self.Nt[str(record)]['discount'] += self.gamma**(self.episode - step) * 1
+                                self.Xs[str(record)]['rewards'] += self.gamma**(self.episode - step) * sum(rewards)
+                  
+                            B = 30
+                            nt = 0
+
+                            for record in self.Nt:
+                                nt += self.Nt[record]['discount']
+                            
+                            best_value = -numpy.inf
+                            for record in self.tokens_record:
+                                if self.Nt[str(record[0])]['discount'] == 0:
+                                    self.Nt[str(record[0])]['discount'] = 1e400
+                                ct = 2 * B * numpy.sqrt((2/3 * numpy.log(nt)) / self.Nt[str(record[0])]['discount'])
+                                mean_reward = 1/self.Nt[str(record[0])]['discount'] * self.Xs[str(record[0])]['rewards']
+                                if mean_reward + ct > best_value:
+                                    best_value = mean_reward + ct
+                                    token_value = float(record[0])
+                                self.Nt[str(record[0])]['discount'] = 0
+                                self.Xs[str(record[0])]['rewards'] = 0
+                             
+                        print("token: ", token_value)
                         self.episode_return = 0
                         transition["token_value"] = token_value
                         
-                        if self.episode % 300 == 0 and self.epsilon > 0.2:
-                            self.epsilon -= 0.1
-
+                
 
         original_rewards = [r for r in rewards]
         self.trust_request_matrix[:] = 0
@@ -227,5 +213,5 @@ class MATE(ActorCritic):
                     transition["rewards"][i] += min(filtered_trust_responses)
         if done:
             self.last_rewards_observed = [[] for _ in range(self.nr_agents)]
-           
+            print(token_value)
         return transition
