@@ -138,10 +138,10 @@ class MATE(ActorCritic):
                                 step += 1
                                 self.Nt[str(record)]['discount'] += self.discount_factor**(len(self.tokens_record) - step) * 1
                                 if sum(i_rewards) < 0:
-                                    self.Xs[str(record)]['rewards'] += (1.1)**(len(self.tokens_record) - step) * sum(i_rewards)
+                                    self.Xs[str(record)]['rewards'] += (1.01)**(len(self.tokens_record) - step) * sum(i_rewards)
                                 self.Xs[str(record)]['rewards'] += self.discount_factor**(len(self.tokens_record) - step) * sum(i_rewards)
 
-                            B = 1/3  
+                            B = 1/10  
                             nt = 0
 
                             for record in self.Nt:
