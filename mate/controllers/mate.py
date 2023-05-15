@@ -45,12 +45,12 @@ class MATE(ActorCritic):
         self.episode = 0
         self.epoch = 0
         self.episode_return = 0
-        self.epsilon = 0.9
+        self.epsilon = 0.1
         self.best_value = [random.choice([0.25, 0.5, 1.0, 2.0, 4.0]) for x in range(self.nr_agents)]
         self.last_best_value = self.best_value
         self.last_token_value = random.choice([0.25, 0.5, 1.0, 2.0, 4.0])#self.token_value
         self.token_values = [0.25, 0.5, 1.0, 2.0, 4.0]
-        self.gamma = 0.3
+        self.discount_factor = 0.99
         self.Nt = {}
         self.Xs = {}
         self.tokens_record = []
@@ -131,36 +131,42 @@ class MATE(ActorCritic):
                             self.tokens_record.append([token_value, self.episode_return])
                         else:
                             self.tokens_record.append([token_value, self.episode_return])
+                            if len(self.tokens_record) >= 100:
+                                self.tokens_record.pop(0)
                             step = 0
-                            for record, rewards in self.tokens_record:
+                            for record, i_rewards in self.tokens_record:
                                 step += 1
-                                # if(str(record[0]) not in self.Nt):
-                                #     self.Nt[str(record[0])] = {'discount': 0}
-                                # if(str(record[0]) not in self.Xt):
-                                #     self.Xt[str(record[0])] = {'rewards': 0}
-                                self.Nt[str(record)]['discount'] += self.gamma**(self.episode - step) * 1
-                                self.Xs[str(record)]['rewards'] += self.gamma**(self.episode - step) * sum(rewards)
-                  
-                            B = 30
+                                self.Nt[str(record)]['discount'] += self.discount_factor**(len(self.tokens_record) - step) * 1
+                                if sum(i_rewards) < 0:
+                                    self.Xs[str(record)]['rewards'] += (1.1)**(len(self.tokens_record) - step) * sum(i_rewards)
+                                self.Xs[str(record)]['rewards'] += self.discount_factor**(len(self.tokens_record) - step) * sum(i_rewards)
+
+                            B = 1/3  
                             nt = 0
 
                             for record in self.Nt:
                                 nt += self.Nt[record]['discount']
                             
                             best_value = -numpy.inf
-                            for record in self.tokens_record:
-                                if self.Nt[str(record[0])]['discount'] == 0:
-                                    self.Nt[str(record[0])]['discount'] = 1e400
-                                ct = 2 * B * numpy.sqrt((2/3 * numpy.log(nt)) / self.Nt[str(record[0])]['discount'])
-                                mean_reward = 1/self.Nt[str(record[0])]['discount'] * self.Xs[str(record[0])]['rewards']
+                            for record in self.token_values:
+                                if self.Nt[str(record)]['discount'] == 0:
+                                    self.Nt[str(record)]['discount'] = 1e400
+                                ct = 2 * B * numpy.sqrt((3/2 * numpy.log(nt)) / self.Nt[str(record)]['discount'])
+                                mean_reward = (1/self.Nt[str(record)]['discount']) * self.Xs[str(record)]['rewards']
+                                #print("token value:", record, "mean_reward: ", mean_reward, "ct:", ct)
+                                #print("best_value:", best_value)
                                 if mean_reward + ct > best_value:
                                     best_value = mean_reward + ct
-                                    token_value = float(record[0])
-                                self.Nt[str(record[0])]['discount'] = 0
-                                self.Xs[str(record[0])]['rewards'] = 0
+                                    token_value = float(record)
+                                    #print(token_value)
+                               
+                            for record in self.token_values:  
+                                self.Nt[str(record)]['discount'] = 0
+                                self.Xs[str(record)]['rewards'] = 0
                              
-                        print("token: ", token_value)
+                        #print("token: ", token_value)
                         self.episode_return = 0
+                        self.last_token_value = token_value
                         transition["token_value"] = token_value
                         
                 
