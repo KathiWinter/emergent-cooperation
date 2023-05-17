@@ -86,7 +86,8 @@ filename_pdf = filename_prefix + ".pdf"
 data_prefix_pattern = params["data_prefix_pattern"]
 
 if baseline_comparison:
-    algorithm_info = [("b","MATE-TD_"), ("deeppink","MATE-TD-UCB"), ("sienna","MATE-TD-T0.25"), ("olive","MATE-TD-T0.5"), ("aqua","MATE-TD-T0.75"), ("tomato","MATE-TD-T1.5"), ("deepskyblue","MATE-TD-T2"), ("navy","MATE-TD-T2.5"), ("palegreen","MATE-TD-T3"), ("goldenrod","MATE-TD-T4"), ("seagreen","MATE-TD-T8"), ("c","MATE-REWARD_"), ("r", "LIO_"), ("magenta","Gifting-ZEROSUM_"), ("darkorange", "Gifting-BUDGET_"), ("k","IAC_"), ("darkblue", "Random_")]
+    #algorithm_info = [("b","MATE-TD_"), ("deeppink","MATE-TD-UCB"), ("sienna","MATE-TD-T0.25"), ("olive","MATE-TD-T0.5"), ("aqua","MATE-TD-T0.75"), ("tomato","MATE-TD-T1.5"), ("deepskyblue","MATE-TD-T2"), ("navy","MATE-TD-T2.5"), ("palegreen","MATE-TD-T3"), ("goldenrod","MATE-TD-T4"), ("seagreen","MATE-TD-T8"), ("c","MATE-REWARD_"), ("r", "LIO_"), ("magenta","Gifting-ZEROSUM_"), ("darkorange", "Gifting-BUDGET_"), ("k","IAC_"), ("darkblue", "Random_")]
+    algorithm_info = [("b","MATE-TD_"), ("deeppink","MATE-TD-UCB")]
 else:
     algorithm_info = [("b","MATE-TD_"), ("deeppink","MATE-TD-UCB"), ("sienna","MATE-TD-T0.25"), ("olive","MATE-TD-T0.5"), ("aqua","MATE-TD-T0.75"), ("tomato","MATE-TD-T1.5"), ("deepskyblue","MATE-TD-T2"), ("navy","MATE-TD-T2.5"), ("deepskyblue","MATE-TD-T2"), ("lawngreen","MATE-TD-T2.5"), ("palegreen","MATE-TD-T3"), ("goldenrod","MATE-TD-T4"), ("seagreen","MATE-TD-T8"), ("purple","MATE-TD-DEFECT_COMPLETE_"), ("darkgray","MATE-TD-DEFECT_REQUEST_"), ("c","MATE-TD-DEFECT_RESPONSE_"), ("r", "LIO_"), ("k","IAC_")]
 
