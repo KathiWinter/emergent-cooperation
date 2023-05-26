@@ -87,7 +87,6 @@ class LIO(ActorCritic):
         incentives = []
         abs_incentive_returns = [torch.zeros(1, dtype=torch.float32, device=self.device) for _ in range(self.nr_agents)]
         current_incentive_returns = torch.zeros(self.nr_agents, dtype=torch.float32, device=self.device)
-        current_incentive_returns_other = torch.zeros(self.nr_agents, dtype=torch.float32, device=self.device)
         incentive_returns = [[] for _ in range(self.nr_agents)]
         receive_enabled = None
         for memory, incentive_net in zip(self.memories, self.incentive_nets):
@@ -105,16 +104,17 @@ class LIO(ActorCritic):
                 if done:
                     abs_incentive_returns[memory.agent_id] += current_abs_incentive_return
                     current_incentive_returns.fill_(0.0)
-                    current_incentive_returns_other.fill_(0.0)
                 rew_incentive = torch.zeros(self.nr_agents, dtype=torch.float32, device=self.device)
                 rew_incentive_other = torch.zeros(self.nr_agents, dtype=torch.float32, device=self.device)
                 
-                current_incentive_returns_other = self.gamma*current_incentive_returns_other
-                rew_incentive_other[memory.agent_id] += max(1 * self.trust_requests[t][memory.agent_id])
+                #current_incentive_returns_other = self.gamma*current_incentive_returns_other
+                rew_incentive_other[memory.agent_id] += max(self.trust_requests[t][memory.agent_id])
                 filtered_trust_responses = [self.trust_responses[t][memory.agent_id][x] for x in range(self.nr_agents) if abs(self.trust_responses[t][memory.agent_id][x]) > 0]
                 if len(filtered_trust_responses) > 0:
-                                rew_incentive_other[memory.agent_id] += min(1 * filtered_trust_responses)
-                current_incentive_returns_other += rew_incentive_other
+                                rew_incentive_other[memory.agent_id] += min(filtered_trust_responses)
+                if len(incentive_returns[memory.agent_id]) <= t:
+                        incentive_returns[memory.agent_id].append(0)
+                incentive_returns[memory.agent_id][t] = sum(rew_incentive_other)
                                 
                 current_incentive_returns = self.gamma*current_incentive_returns
                 if send_enabled:
@@ -124,10 +124,7 @@ class LIO(ActorCritic):
 
                     current_incentive_returns += rew_incentive
                 current_abs_incentive_return = incentive.abs().sum() + self.gamma*current_abs_incentive_return
-                for incentive_return, new_return in zip(incentive_returns, current_incentive_returns_other):
-                    if len(incentive_return) <= t:
-                        incentive_return.append(0)
-                    incentive_return[t] += new_return.detach()
+
         return incentives, abs_incentive_returns, [torch.tensor(R, dtype=torch.float32, device=self.device) for R in incentive_returns]
 
     def update_critic(self, agent_id, training_data, critic_net, preprocessed_data):
