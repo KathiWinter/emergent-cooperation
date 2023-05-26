@@ -16,7 +16,7 @@ def bootstrap(data, n_boot=10000, ci=95):
     return (s1,s2)
 
 def tsplot(data, params, alpha=0.12, **kw):
-    data = numpy.array(data)
+    data = numpy.array(data, dtype=object)
     default_x = list(range(data.shape[1]))
     x = get_param_or_default(params, "x_axis_values", default_x)[:len(default_x)]
     indices = list(range(0, len(default_x), params["filter_size"]))
