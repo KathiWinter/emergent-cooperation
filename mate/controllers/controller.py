@@ -96,7 +96,7 @@ class Controller:
             "joint_action": joint_action,
             "rewards": rewards,
             "extrinsic_rewards": rewards,
-            "incentive_rewards": [torch.zeros(self.nr_agents, dtype=torch.float32, device=self.device) for _ in range(self.nr_agents)],
+            "incentive_rewards": [0 for _ in range(self.nr_agents)],
             "next_joint_histories": next_joint_histories,
             "done": done,
             "joint_old_probs":joint_old_probs,

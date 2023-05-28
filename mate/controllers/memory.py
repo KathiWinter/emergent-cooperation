@@ -36,12 +36,12 @@ class ExperienceMemory:
             extrinsic_return_value = 0
             local_abs_incentive_cost = torch.zeros(1, dtype=torch.float32, device=self.device)
             for transition in reversed(self.episode_buffer):
-                return_value = transition["rewards"][self.agent_id] + self.gamma*return_value
+                return_value = transition["rewards"][self.agent_id] + transition["incentive_rewards"][self.agent_id] + self.gamma*return_value
                 extrinsic_return_value = transition["extrinsic_rewards"][self.agent_id] + self.gamma*extrinsic_return_value
                 incentive_reward = transition["incentive_rewards"][self.agent_id]
-                local_abs_incentive_cost = incentive_reward.exp().abs().sum() + self.gamma*local_abs_incentive_cost
+                local_abs_incentive_cost = incentive_reward + self.gamma*local_abs_incentive_cost
                 self.returns.append(return_value)
-                self.incentive_rewards.append(incentive_reward)
+                self.incentive_rewards.append(transition["incentive_rewards"][self.agent_id])
                 self.extrinsic_returns.append(extrinsic_return_value)
                 self.histories.append(transition["joint_histories"][self.agent_id])
                 self.next_histories.append(transition["next_joint_histories"][self.agent_id])
@@ -60,6 +60,7 @@ class ExperienceMemory:
             torch.tensor(numpy.array(self.next_histories), dtype=torch.float32, device=self.device),\
             torch.tensor(numpy.array(self.actions), dtype=torch.long, device=self.device),\
             torch.tensor(numpy.array(self.rewards), dtype=torch.float32, device=self.device),\
+            torch.tensor(numpy.array(self.incentive_rewards), dtype=torch.float32, device=self.device),\
             torch.tensor(numpy.array(self.returns), dtype=torch.float32, device=self.device),\
             torch.tensor(numpy.array(self.old_probs), dtype=torch.float32, device=self.device),\
             torch.tensor(numpy.array(self.dones), dtype=torch.float32, device=self.device),\
@@ -83,9 +84,9 @@ class ExperienceMemory:
         self.histories.clear()
         self.next_histories.clear()
         self.rewards.clear()
+        self.incentive_rewards.clear()
         self.returns.clear()
         self.extrinsic_returns.clear()
-        self.incentive_rewards.clear()
         self.actions.clear()
         self.old_probs.clear()
         self.dones.clear()

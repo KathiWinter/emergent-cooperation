@@ -64,21 +64,22 @@ class LIO(ActorCritic):
         self.update_policy = True
         #mate
         self.last_rewards_observed = [[] for _ in range(self.nr_agents)]
-        self.mate_mode = get_param_or_default(params, "mate_mode", STATIC_MODE)
+        self.mate_mode = get_param_or_default(params, "mate_mode", TD_ERROR_MODE)
         self.defect_mode = get_param_or_default(params, "defect_mode", NO_DEFECT)
         self.trust_requests = []
         self.trust_responses = []
- 
+        self.step = 0
+
 
     def update_step(self):
-        preprocessed_data = self.preprocess()
-        if not self.update_policy:
-            for i, memory, incentive_net in\
-                zip(range(self.nr_agents), self.memories, self.incentive_nets):
-                self.local_incentive_update(i, memory, incentive_net, preprocessed_data)
+        #preprocessed_data = self.preprocess()
+        # if not self.update_policy:
+        #     for i, memory, incentive_net in\
+        #         zip(range(self.nr_agents), self.memories, self.incentive_nets):
+        #         self.local_incentive_update(i, memory, incentive_net, preprocessed_data)
         for i, memory, actor_net, critic_net in\
             zip(range(self.nr_agents), self.memories, self.actor_nets, self.critic_nets):
-            self.local_update(i, memory, actor_net, critic_net, preprocessed_data)
+            self.local_update(i, memory, actor_net, critic_net)
         for memory in self.memories:
             memory.clear()
         self.update_policy = not self.update_policy
@@ -91,7 +92,7 @@ class LIO(ActorCritic):
         receive_enabled = None
         for memory, incentive_net in zip(self.memories, self.incentive_nets):
             current_abs_incentive_return = torch.zeros(1, dtype=torch.float32, device=self.device)
-            histories, _, _, _, _, _, dones, _ = memory.get_training_data()
+            histories, _, _, _, _, _, _, dones, _ = memory.get_training_data()
   
             if receive_enabled is None:
                 receive_enabled = [[self.sample_no_comm_failure() for _ in range(self.nr_agents)] for _ in histories]
@@ -108,12 +109,12 @@ class LIO(ActorCritic):
                 rew_incentive_other = torch.zeros(self.nr_agents, dtype=torch.float32, device=self.device)
                 
                 #current_incentive_returns_other = self.gamma*current_incentive_returns_other
-                rew_incentive_other[memory.agent_id] += max(self.trust_requests[t][memory.agent_id])
+                rew_incentive_other[memory.agent_id] += numpy.max(self.trust_requests[t][memory.agent_id])
                 filtered_trust_responses = [self.trust_responses[t][memory.agent_id][x] for x in range(self.nr_agents) if abs(self.trust_responses[t][memory.agent_id][x]) > 0]
                 if len(filtered_trust_responses) > 0:
-                                rew_incentive_other[memory.agent_id] += min(filtered_trust_responses)
+                    rew_incentive_other[memory.agent_id] += min(filtered_trust_responses)
                 if len(incentive_returns[memory.agent_id]) <= t:
-                        incentive_returns[memory.agent_id].append(0)
+                    incentive_returns[memory.agent_id].append(0)
                 incentive_returns[memory.agent_id][t] = sum(rew_incentive_other)
                                 
                 current_incentive_returns = self.gamma*current_incentive_returns
@@ -124,29 +125,23 @@ class LIO(ActorCritic):
 
                     current_incentive_returns += rew_incentive
                 current_abs_incentive_return = incentive.abs().sum() + self.gamma*current_abs_incentive_return
-
+        self.trust_requests = []
+        self.trust_responses = []
         return incentives, abs_incentive_returns, [torch.tensor(R, dtype=torch.float32, device=self.device) for R in incentive_returns]
 
-    def update_critic(self, agent_id, training_data, critic_net, preprocessed_data):
-        _, _, incentive_returns = preprocessed_data
-        incentive_returns = incentive_returns[agent_id]
-        histories, _, _, _, returns, _, _, _ = training_data
-        assertEquals(returns.size(), incentive_returns.size())
+    def update_critic(self, agent_id, training_data, critic_net):
+        histories, _, _, rewards, _, returns, _, _, _ = training_data
+        assertEquals(rewards.size(), returns.size())
         values = critic_net(histories).squeeze()
         assertEquals(values.size(), returns.size())
-        returns += incentive_returns
         critic_loss = F.mse_loss(returns.detach(), values)
         critic_net.optimizer.zero_grad()
         critic_loss.backward()
         nn.utils.clip_grad_norm_(critic_net.parameters(), self.clip_norm)
         critic_net.optimizer.step()
 
-    def update_actor(self, agent_id, training_data, actor_net, preprocessed_data):
-        _, _, incentive_returns = preprocessed_data
-        incentive_returns = incentive_returns[agent_id]
-        histories, _, actions, _, returns, old_probs, _, _ = training_data
-        assertEquals(returns.size(), incentive_returns.size())
-        returns += incentive_returns
+    def update_actor(self, agent_id, training_data, actor_net):
+        histories, _, actions, _, _, returns, old_probs, _, _ = training_data
         values = self.get_values(agent_id, histories).squeeze().detach()
         action_probs = actor_net(histories)
         advantages = returns.detach() - values.detach()
@@ -158,6 +153,7 @@ class LIO(ActorCritic):
         actor_loss.backward()
         nn.utils.clip_grad_norm_(actor_net.parameters(), self.clip_norm)
         actor_net.optimizer.step()
+
 
     def local_incentive_update(self, agent_id, memory, incentive_net, preprocessed_data):
         R_incentives, abs_incentive_cost, _ = preprocessed_data
@@ -176,18 +172,29 @@ class LIO(ActorCritic):
 
 
     def can_rely_on(self, agent_id, reward, history, next_history):
-        history = torch.tensor(numpy.array([history]), dtype=torch.float32, device=self.device)
-        next_history = torch.tensor(numpy.array([next_history]), dtype=torch.float32, device=self.device)
-        value = self.get_values(agent_id, history)[0].item()
-        next_value = self.get_values(agent_id, next_history)[0].item()
-        return reward + self.gamma*next_value - value >= 0
+        if self.mate_mode == STATIC_MODE:
+            is_empty = self.last_rewards_observed[agent_id]
+            if is_empty:
+                self.last_rewards_observed[agent_id].append(reward)
+                return True
+            last_reward = numpy.mean(self.last_rewards_observed[agent_id])
+            self.last_rewards_observed[agent_id].append(reward)
+            return reward >= last_reward
+        if self.mate_mode == TD_ERROR_MODE:
+            history = torch.tensor(numpy.array([history]), dtype=torch.float32, device=self.device)
+            next_history = torch.tensor(numpy.array([next_history]), dtype=torch.float32, device=self.device)
+            value = self.get_values(agent_id, history)[0].item()
+            next_value = self.get_values(agent_id, next_history)[0].item()
+            return reward + self.gamma*next_value - value >= 0
+        if self.mate_mode == VALUE_DECOMPOSE_MODE:
+            return False
 
 
-
+    
     def prepare_transition(self, joint_histories, joint_action, rewards, next_joint_histories, done, info):
         transition = super(LIO, self).prepare_transition(joint_histories, joint_action, rewards, next_joint_histories, done, info)
         token_value = [1, 1]#self.token_value
-
+    
         original_rewards = [r for r in rewards]
         trust_request_matrix = numpy.zeros((self.nr_agents, self.nr_agents), dtype=numpy.float32)
         trust_response_matrix = numpy.zeros((self.nr_agents, self.nr_agents), dtype=numpy.float32)
@@ -213,10 +220,10 @@ class LIO(ActorCritic):
             if request_receive_enabled[i]:
                 trust_requests = [trust_request_matrix[i][x] for x in neighborhood]
                 if len(trust_requests) > 0:
-                    #transition["rewards"][i] += numpy.max(trust_requests)
-                    pass
+                    transition["incentive_rewards"][i] += numpy.max(trust_requests)
+                    
             if respond_enabled and len(neighborhood) > 0:
-                if self.can_rely_on(i, original_rewards[i], history, next_history):
+                if self.can_rely_on(i, transition["rewards"][i]+transition["incentive_rewards"][i], history, next_history):
                     accept_trust = 1
                 else:
                     accept_trust = -1
@@ -233,11 +240,11 @@ class LIO(ActorCritic):
             if receive_enabled and len(neighborhood) > 0 and trust_responses.any():
                 filtered_trust_responses = [trust_responses[x] for x in neighborhood if abs(trust_responses[x]) > 0]
                 if len(filtered_trust_responses) > 0:
-                    #transition["rewards"][i] += min(filtered_trust_responses)
-                    pass
+                    transition["incentive_rewards"][i] += min(filtered_trust_responses)
+                    
         if done:
             self.last_rewards_observed = [[] for _ in range(self.nr_agents)]
-        
+        self.step += 1
         self.trust_requests.append(trust_request_matrix)
         self.trust_responses.append(trust_response_matrix)
         return transition

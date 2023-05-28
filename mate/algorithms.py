@@ -15,6 +15,7 @@ def make(params):
         return lola.LOLA(params)
     if algorithm_name == "LIO":
         params["no_ppo"] = False
+        params["mate_mode"] = "td_error"
         return lio.LIO(params)
     if algorithm_name == "LIO-0.1":
         params["no_ppo"] = False

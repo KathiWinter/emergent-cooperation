@@ -82,11 +82,11 @@ class ActorCritic(Controller):
         m1 = Categorical(probs)
         return -m1.log_prob(action)*advantage
 
-    def local_update(self, agent_id, memory, actor_net, critic_net, preprocessed_data):
+    def local_update(self, agent_id, memory, actor_net, critic_net):
         training_data = memory.get_training_data()
         for _ in range(self.nr_update_iterations):
-            self.update_critic(agent_id, training_data, critic_net, preprocessed_data)
-            self.update_actor(agent_id, training_data, actor_net, preprocessed_data)
+            self.update_critic(agent_id, training_data, critic_net)
+            self.update_actor(agent_id, training_data, actor_net)
         return True
 
     def update_critic(self, agent_id, training_data, critic_net, preprocessed_data):
