@@ -66,20 +66,18 @@ class LIO(ActorCritic):
         self.last_rewards_observed = [[] for _ in range(self.nr_agents)]
         self.mate_mode = get_param_or_default(params, "mate_mode", TD_ERROR_MODE)
         self.defect_mode = get_param_or_default(params, "defect_mode", NO_DEFECT)
-        self.trust_requests = []
-        self.trust_responses = []
         self.step = 0
-
-
+        self.incentive_rewards = [[] for _ in range(self.nr_agents)]
+        
     def update_step(self):
-        #preprocessed_data = self.preprocess()
-        # if not self.update_policy:
-        #     for i, memory, incentive_net in\
-        #         zip(range(self.nr_agents), self.memories, self.incentive_nets):
-        #         self.local_incentive_update(i, memory, incentive_net, preprocessed_data)
+        preprocessed_data = self.preprocess()
         for i, memory, actor_net, critic_net in\
             zip(range(self.nr_agents), self.memories, self.actor_nets, self.critic_nets):
             self.local_update(i, memory, actor_net, critic_net)
+        if not self.update_policy:
+            for i, memory, incentive_net in\
+                zip(range(self.nr_agents), self.memories, self.incentive_nets):
+                self.local_incentive_update(i, memory, incentive_net, preprocessed_data)
         for memory in self.memories:
             memory.clear()
         self.update_policy = not self.update_policy
@@ -93,7 +91,6 @@ class LIO(ActorCritic):
         for memory, incentive_net in zip(self.memories, self.incentive_nets):
             current_abs_incentive_return = torch.zeros(1, dtype=torch.float32, device=self.device)
             histories, _, _, _, _, _, _, dones, _ = memory.get_training_data()
-  
             if receive_enabled is None:
                 receive_enabled = [[self.sample_no_comm_failure() for _ in range(self.nr_agents)] for _ in histories]
             joint_actions = memory.get_joint_actions()
@@ -106,27 +103,18 @@ class LIO(ActorCritic):
                     abs_incentive_returns[memory.agent_id] += current_abs_incentive_return
                     current_incentive_returns.fill_(0.0)
                 rew_incentive = torch.zeros(self.nr_agents, dtype=torch.float32, device=self.device)
-                rew_incentive_other = torch.zeros(self.nr_agents, dtype=torch.float32, device=self.device)
-                
-                #current_incentive_returns_other = self.gamma*current_incentive_returns_other
-                rew_incentive_other[memory.agent_id] += numpy.max(self.trust_requests[t][memory.agent_id])
-                filtered_trust_responses = [self.trust_responses[t][memory.agent_id][x] for x in range(self.nr_agents) if abs(self.trust_responses[t][memory.agent_id][x]) > 0]
-                if len(filtered_trust_responses) > 0:
-                    rew_incentive_other[memory.agent_id] += min(filtered_trust_responses)
-                if len(incentive_returns[memory.agent_id]) <= t:
-                    incentive_returns[memory.agent_id].append(0)
-                incentive_returns[memory.agent_id][t] = sum(rew_incentive_other)
-                                
                 current_incentive_returns = self.gamma*current_incentive_returns
                 if send_enabled:
                     for a in range(self.nr_agents):
                         if receive_enabled[t][a]:
-                            rew_incentive[a] = incentive[a] * self.trust_requests[t][a][memory.agent_id] + incentive[a] * self.trust_responses[t][a][memory.agent_id]
-
+                            rew_incentive[a] = incentive[a]
                     current_incentive_returns += rew_incentive
                 current_abs_incentive_return = incentive.abs().sum() + self.gamma*current_abs_incentive_return
-        self.trust_requests = []
-        self.trust_responses = []
+                for incentive_return, new_return in zip(incentive_returns, current_incentive_returns):
+                    if len(incentive_return) <= t:
+                        incentive_return.append(0)
+                    incentive_return[t] += new_return.detach()
+            self.incentive_rewards[memory.agent_id] = incentives[memory.agent_id]
         return incentives, abs_incentive_returns, [torch.tensor(R, dtype=torch.float32, device=self.device) for R in incentive_returns]
 
     def update_critic(self, agent_id, training_data, critic_net):
@@ -193,58 +181,63 @@ class LIO(ActorCritic):
     
     def prepare_transition(self, joint_histories, joint_action, rewards, next_joint_histories, done, info):
         transition = super(LIO, self).prepare_transition(joint_histories, joint_action, rewards, next_joint_histories, done, info)
-        token_value = [1, 1]#self.token_value
-    
-        original_rewards = [r for r in rewards]
-        trust_request_matrix = numpy.zeros((self.nr_agents, self.nr_agents), dtype=numpy.float32)
-        trust_response_matrix = numpy.zeros((self.nr_agents, self.nr_agents), dtype=numpy.float32)
-        # 1. Send trust requests
-        defector_id = -1
-        if self.defect_mode != NO_DEFECT:
-            defector_id = numpy.random.randint(0, self.nr_agents)
-        request_receive_enabled = [self.sample_no_comm_failure() for _ in range(self.nr_agents)]
-        for i, reward, history, next_history in zip(range(self.nr_agents), original_rewards, joint_histories, next_joint_histories):
-            requests_enabled = i != defector_id or self.defect_mode not in [DEFECT_ALL, DEFECT_SEND]
-            requests_enabled = requests_enabled and self.sample_no_comm_failure()
-            if requests_enabled and self.can_rely_on(i, reward, history, next_history): # Analyze the "winners" of that step
+
+        token_value = self.incentive_rewards
+
+        if len(self.incentive_rewards[0]) > 0:
+            original_rewards = [r for r in rewards]
+            trust_request_matrix = numpy.zeros((self.nr_agents, self.nr_agents), dtype=numpy.float32)
+            trust_response_matrix = numpy.zeros((self.nr_agents, self.nr_agents), dtype=numpy.float32)
+            # 1. Send trust requests
+            defector_id = -1
+            if self.defect_mode != NO_DEFECT:
+                defector_id = numpy.random.randint(0, self.nr_agents)
+            request_receive_enabled = [self.sample_no_comm_failure() for _ in range(self.nr_agents)]
+            for i, reward, history, next_history in zip(range(self.nr_agents), original_rewards, joint_histories, next_joint_histories):
+                requests_enabled = i != defector_id or self.defect_mode not in [DEFECT_ALL, DEFECT_SEND]
+                requests_enabled = requests_enabled and self.sample_no_comm_failure()
+                if requests_enabled and self.can_rely_on(i, reward, history, next_history): # Analyze the "winners" of that step
+                    neighborhood = info["neighbor_agents"][i]
+                    for j in neighborhood:
+                        assert i != j
+                        trust_request_matrix[j][i] += token_value[i][self.step % 1500][j]
+                        
+            # 2. Send trust responses
+            for i, history, next_history in zip(range(self.nr_agents), joint_histories, next_joint_histories):
                 neighborhood = info["neighbor_agents"][i]
-                for j in neighborhood:
-                    assert i != j
-                    trust_request_matrix[j][i] += token_value[i]
-                    
-        # 2. Send trust responses
-        for i, history, next_history in zip(range(self.nr_agents), joint_histories, next_joint_histories):
-            neighborhood = info["neighbor_agents"][i]
-            respond_enabled = i != defector_id or self.defect_mode not in [DEFECT_ALL, DEFECT_RESPONSE]
-            respond_enabled = respond_enabled and self.sample_no_comm_failure()
-            if request_receive_enabled[i]:
-                trust_requests = [trust_request_matrix[i][x] for x in neighborhood]
-                if len(trust_requests) > 0:
-                    transition["incentive_rewards"][i] += numpy.max(trust_requests)
-                    
-            if respond_enabled and len(neighborhood) > 0:
-                if self.can_rely_on(i, transition["rewards"][i]+transition["incentive_rewards"][i], history, next_history):
-                    accept_trust = 1
-                else:
-                    accept_trust = -1
-                for j in neighborhood:
-                    assert i != j
-                    if trust_request_matrix[i][j] > 0:
-                        trust_response_matrix[j][i] = accept_trust * token_value[i]
-  
-        # 3. Receive trust responses
-        for i, trust_responses in enumerate(trust_response_matrix):
-            neighborhood = info["neighbor_agents"][i]
-            receive_enabled = i != defector_id or self.defect_mode not in [DEFECT_ALL, DEFECT_RECEIVE]
-            receive_enabled = receive_enabled and self.sample_no_comm_failure()
-            if receive_enabled and len(neighborhood) > 0 and trust_responses.any():
-                filtered_trust_responses = [trust_responses[x] for x in neighborhood if abs(trust_responses[x]) > 0]
-                if len(filtered_trust_responses) > 0:
-                    transition["incentive_rewards"][i] += min(filtered_trust_responses)
-                    
+                respond_enabled = i != defector_id or self.defect_mode not in [DEFECT_ALL, DEFECT_RESPONSE]
+                respond_enabled = respond_enabled and self.sample_no_comm_failure()
+                if request_receive_enabled[i]:
+                    trust_requests = [trust_request_matrix[i][x] for x in neighborhood]
+                    if len(trust_requests) > 0:
+                        transition["incentive_rewards"][i] += numpy.max(trust_requests)
+                        
+                if respond_enabled and len(neighborhood) > 0:
+                    if self.can_rely_on(i, transition["rewards"][i]+transition["incentive_rewards"][i], history, next_history):
+                        accept_trust = 1
+                    else:
+                        accept_trust = -1
+                    for j in neighborhood:
+                        assert i != j
+                        if trust_request_matrix[i][j] > 0:
+                            trust_response_matrix[j][i] = accept_trust * token_value[i][self.step % 1500][j]
+    
+            # 3. Receive trust responses
+            for i, trust_responses in enumerate(trust_response_matrix):
+                neighborhood = info["neighbor_agents"][i]
+                receive_enabled = i != defector_id or self.defect_mode not in [DEFECT_ALL, DEFECT_RECEIVE]
+                receive_enabled = receive_enabled and self.sample_no_comm_failure()
+                if receive_enabled and len(neighborhood) > 0 and trust_responses.any():
+                    filtered_trust_responses = [trust_responses[x] for x in neighborhood if abs(trust_responses[x]) > 0]
+                    if len(filtered_trust_responses) > 0:
+                        transition["incentive_rewards"][i] += min(filtered_trust_responses)
+        
+            if done:
+                print(token_value[0][self.step % 1500][1])
+                print(token_value[1][self.step % 1500][0])
+                
+        self.step += 1              
         if done:
             self.last_rewards_observed = [[] for _ in range(self.nr_agents)]
-        self.step += 1
-        self.trust_requests.append(trust_request_matrix)
-        self.trust_responses.append(trust_response_matrix)
+            self.step = 0
         return transition
