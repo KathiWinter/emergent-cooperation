@@ -46,7 +46,7 @@ class IncentiveNet(nn.Module):
         x = self.fc_net(torch.cat([x, y], dim=-1))
         output = torch.zeros((batch_size, self.nr_outputs), dtype=torch.float32)
         output[:,self.other_agents_id] = self.reward_head(x)
-        return torch.sigmoid(output)
+        return F.sigmoid(output)
 
 """
  Learning to Incentivice Other agents (LIO)
@@ -62,6 +62,7 @@ class LIO(ActorCritic):
             self.incentive_nets.append(IncentiveNet(i, self.input_dim, self.nr_agents,\
                 self.nr_actions, params["nr_hidden_units"], self.learning_rate))
         self.update_policy = True
+        self.preprocessed_data = None
         #mate
         self.last_rewards_observed = [[] for _ in range(self.nr_agents)]
         self.mate_mode = get_param_or_default(params, "mate_mode", TD_ERROR_MODE)
@@ -70,14 +71,14 @@ class LIO(ActorCritic):
         self.incentive_rewards = [[] for _ in range(self.nr_agents)]
         
     def update_step(self):
-        preprocessed_data = self.preprocess()
-        for i, memory, actor_net, critic_net in\
-            zip(range(self.nr_agents), self.memories, self.actor_nets, self.critic_nets):
-            self.local_update(i, memory, actor_net, critic_net)
+        self.preprocessed_data = self.preprocess()
         if not self.update_policy:
             for i, memory, incentive_net in\
                 zip(range(self.nr_agents), self.memories, self.incentive_nets):
-                self.local_incentive_update(i, memory, incentive_net, preprocessed_data)
+                self.local_incentive_update(i, memory, incentive_net, self.preprocessed_data)
+        for i, memory, actor_net, critic_net in\
+            zip(range(self.nr_agents), self.memories, self.actor_nets, self.critic_nets):
+            self.local_update(i, memory, actor_net, critic_net)
         for memory in self.memories:
             memory.clear()
         self.update_policy = not self.update_policy
@@ -85,37 +86,19 @@ class LIO(ActorCritic):
     def preprocess(self):
         incentives = []
         abs_incentive_returns = [torch.zeros(1, dtype=torch.float32, device=self.device) for _ in range(self.nr_agents)]
-        current_incentive_returns = torch.zeros(self.nr_agents, dtype=torch.float32, device=self.device)
-        incentive_returns = [[] for _ in range(self.nr_agents)]
-        receive_enabled = None
         for memory, incentive_net in zip(self.memories, self.incentive_nets):
             current_abs_incentive_return = torch.zeros(1, dtype=torch.float32, device=self.device)
             histories, _, _, _, _, _, _, dones, _ = memory.get_training_data()
-            if receive_enabled is None:
-                receive_enabled = [[self.sample_no_comm_failure() for _ in range(self.nr_agents)] for _ in histories]
             joint_actions = memory.get_joint_actions()
             incentives_ = incentive_net(histories, joint_actions)
             incentives.append(incentives_)
             reward_incentives = incentives_*self.R_max # h_length, n_agents
             for t, done, incentive in zip(range(len(dones)), dones, reward_incentives):
-                send_enabled = self.sample_no_comm_failure()
                 if done:
                     abs_incentive_returns[memory.agent_id] += current_abs_incentive_return
-                    current_incentive_returns.fill_(0.0)
-                rew_incentive = torch.zeros(self.nr_agents, dtype=torch.float32, device=self.device)
-                current_incentive_returns = self.gamma*current_incentive_returns
-                if send_enabled:
-                    for a in range(self.nr_agents):
-                        if receive_enabled[t][a]:
-                            rew_incentive[a] = incentive[a]
-                    current_incentive_returns += rew_incentive
                 current_abs_incentive_return = incentive.abs().sum() + self.gamma*current_abs_incentive_return
-                for incentive_return, new_return in zip(incentive_returns, current_incentive_returns):
-                    if len(incentive_return) <= t:
-                        incentive_return.append(0)
-                    incentive_return[t] += new_return.detach()
-            self.incentive_rewards[memory.agent_id] = incentives[memory.agent_id]
-        return incentives, abs_incentive_returns, [torch.tensor(R, dtype=torch.float32, device=self.device) for R in incentive_returns]
+            self.incentive_rewards[memory.agent_id] = reward_incentives
+        return incentives, abs_incentive_returns
 
     def update_critic(self, agent_id, training_data, critic_net):
         histories, _, _, rewards, _, returns, _, _, _ = training_data
@@ -144,14 +127,15 @@ class LIO(ActorCritic):
 
 
     def local_incentive_update(self, agent_id, memory, incentive_net, preprocessed_data):
-        R_incentives, abs_incentive_cost, _ = preprocessed_data
+        R_incentives, abs_incentive_cost = preprocessed_data
         R_incentives = R_incentives[agent_id]
         extrinsic_returns = memory.get_extrinsic_returns()
         partial_losses = []
         for j in incentive_net.other_agents_id:
             assert j != agent_id
-            losses = R_incentives[:,j].view(-1)*extrinsic_returns.detach()
+            losses = torch.log(R_incentives[:,j].view(-1))*extrinsic_returns.detach()
             partial_losses.append(losses.sum())
+   
         loss = torch.stack(partial_losses).sum() + self.cost_weight*self.R_max*abs_incentive_cost[agent_id]
         incentive_net.optimizer.zero_grad()
         loss.backward()
@@ -200,7 +184,7 @@ class LIO(ActorCritic):
                     neighborhood = info["neighbor_agents"][i]
                     for j in neighborhood:
                         assert i != j
-                        trust_request_matrix[j][i] += token_value[i][self.step % 1500][j]
+                        trust_request_matrix[j][i] += token_value[i][self.step][j]
                         
             # 2. Send trust responses
             for i, history, next_history in zip(range(self.nr_agents), joint_histories, next_joint_histories):
@@ -220,7 +204,7 @@ class LIO(ActorCritic):
                     for j in neighborhood:
                         assert i != j
                         if trust_request_matrix[i][j] > 0:
-                            trust_response_matrix[j][i] = accept_trust * token_value[i][self.step % 1500][j]
+                            trust_response_matrix[j][i] = accept_trust * token_value[i][self.step][j]
     
             # 3. Receive trust responses
             for i, trust_responses in enumerate(trust_response_matrix):
@@ -233,8 +217,8 @@ class LIO(ActorCritic):
                         transition["incentive_rewards"][i] += min(filtered_trust_responses)
         
             if done:
-                print(token_value[0][self.step % 1500][1])
-                print(token_value[1][self.step % 1500][0])
+                print(token_value[0][self.step][1])
+                print(token_value[1][self.step][0])
                 
         self.step += 1              
         if done:
