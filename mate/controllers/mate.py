@@ -26,9 +26,10 @@ class MATE(ActorCritic):
         self.last_rewards_observed = [[] for _ in range(self.nr_agents)]
         self.mate_mode = get_param_or_default(params, "mate_mode", STATIC_MODE)
         self.token_value = get_param_or_default(params, "token_value", 1)
-        self.trust_request_matrix = numpy.zeros((self.nr_agents, self.nr_agents), dtype=numpy.int)
-        self.trust_response_matrix = numpy.zeros((self.nr_agents, self.nr_agents), dtype=numpy.int)
+        self.trust_request_matrix = numpy.zeros((self.nr_agents, self.nr_agents), dtype=numpy.float32)
+        self.trust_response_matrix = numpy.zeros((self.nr_agents, self.nr_agents), dtype=numpy.float32)
         self.defect_mode = get_param_or_default(params, "defect_mode", NO_DEFECT)
+        self.values = numpy.zeros(self.nr_agents, dtype=numpy.float32)
 
     def can_rely_on(self, agent_id, reward, history, next_history):
         if self.mate_mode == STATIC_MODE:
@@ -60,6 +61,7 @@ class MATE(ActorCritic):
             defector_id = numpy.random.randint(0, self.nr_agents)
         request_receive_enabled = [self.sample_no_comm_failure() for _ in range(self.nr_agents)]
         for i, reward, history, next_history in zip(range(self.nr_agents), original_rewards, joint_histories, next_joint_histories):
+            self.values[i] += self.get_values(i, torch.tensor(numpy.array([history]), dtype=torch.float32, device=self.device))[0].item()
             requests_enabled = i != defector_id or self.defect_mode not in [DEFECT_ALL, DEFECT_SEND]
             requests_enabled = requests_enabled and self.sample_no_comm_failure()
             if requests_enabled and self.can_rely_on(i, reward, history, next_history): # Analyze the "winners" of that step
@@ -99,4 +101,7 @@ class MATE(ActorCritic):
                     transition["rewards"][i] += min(filtered_trust_responses)
         if done:
             self.last_rewards_observed = [[] for _ in range(self.nr_agents)]
+            self.token_value = numpy.maximum(0.1, numpy.emath.logn(3, (numpy.mean(self.values)/150)+1))
+            print(self.token_value)
+            
         return transition
