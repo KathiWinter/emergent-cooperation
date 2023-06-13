@@ -25,11 +25,12 @@ class MATE(ActorCritic):
         super(MATE, self).__init__(params)
         self.last_rewards_observed = [[] for _ in range(self.nr_agents)]
         self.mate_mode = get_param_or_default(params, "mate_mode", STATIC_MODE)
-        self.token_value = get_param_or_default(params, "token_value", 1)
+        self.token_value = get_param_or_default(params, "token_value", [0.1 for _ in range(self.nr_agents)])#numpy.zeros(self.nr_agents, dtype=numpy.float32))
         self.trust_request_matrix = numpy.zeros((self.nr_agents, self.nr_agents), dtype=numpy.float32)
         self.trust_response_matrix = numpy.zeros((self.nr_agents, self.nr_agents), dtype=numpy.float32)
         self.defect_mode = get_param_or_default(params, "defect_mode", NO_DEFECT)
         self.values = numpy.zeros(self.nr_agents, dtype=numpy.float32)
+        self.last_values = numpy.zeros(self.nr_agents, dtype=numpy.float32)
 
     def can_rely_on(self, agent_id, reward, history, next_history):
         if self.mate_mode == STATIC_MODE:
@@ -68,7 +69,7 @@ class MATE(ActorCritic):
                 neighborhood = info["neighbor_agents"][i]
                 for j in neighborhood:
                     assert i != j
-                    self.trust_request_matrix[j][i] += self.token_value
+                    self.trust_request_matrix[j][i] += self.token_value[i]
                     transition["request_messages_sent"] += 1
         # 2. Send trust responses
         for i, history, next_history in zip(range(self.nr_agents), joint_histories, next_joint_histories):
@@ -81,9 +82,9 @@ class MATE(ActorCritic):
                     transition["rewards"][i] += numpy.max(trust_requests)
             if respond_enabled and len(neighborhood) > 0:
                 if self.can_rely_on(i, transition["rewards"][i], history, next_history):
-                    accept_trust = self.token_value
+                    accept_trust = self.token_value[i]
                 else:
-                    accept_trust = -self.token_value
+                    accept_trust = -self.token_value[i]
                 for j in neighborhood:
                     assert i != j
                     if self.trust_request_matrix[i][j] > 0:
@@ -101,7 +102,23 @@ class MATE(ActorCritic):
                     transition["rewards"][i] += min(filtered_trust_responses)
         if done:
             self.last_rewards_observed = [[] for _ in range(self.nr_agents)]
-            self.token_value = numpy.maximum(0.1, numpy.emath.logn(3, (numpy.mean(self.values)/150)+1))
+            for i in range(self.nr_agents):
+                value_change = (self.values[i] - self.last_values[i]) / abs(self.last_values[i])
+                # if(self.values[i] > (self.last_values[i] + 10) and self.token_value[i] > 0.1):
+                #     self.token_value[i] = self.token_value[i] + 0.01
+                # elif(self.values[i] < self.last_values[i] - 5 and self.token_value[i] < 4.1):
+                #     self.token_value[i] = self.token_value[i] - 0.01
+                # else: 
+                #     self.token_value[i] = self.token_value[i] + 0.00
+                if(value_change > 0) and self.token_value[i] < 4.1:
+                    self.token_value[i] = self.token_value[i] + 0.01
+                elif(value_change < 0 and self.token_value[i] > 0.1):
+                    self.token_value[i] = self.token_value[i] - 0.01
+                else: 
+                    self.token_value[i] = self.token_value[i] + 0.00
+                    
             print(self.token_value)
+            self.last_values = self.values
+            self.values = numpy.zeros(self.nr_agents, dtype=numpy.float32)
             
         return transition
