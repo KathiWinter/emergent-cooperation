@@ -103,22 +103,21 @@ class MATE(ActorCritic):
         if done:
             self.last_rewards_observed = [[] for _ in range(self.nr_agents)]
             for i in range(self.nr_agents):
-                value_change = (self.values[i] - self.last_values[i]) / abs(self.last_values[i])
-                # if(self.values[i] > (self.last_values[i] + 10) and self.token_value[i] > 0.1):
-                #     self.token_value[i] = self.token_value[i] + 0.01
-                # elif(self.values[i] < self.last_values[i] - 5 and self.token_value[i] < 4.1):
-                #     self.token_value[i] = self.token_value[i] - 0.01
-                # else: 
-                #     self.token_value[i] = self.token_value[i] + 0.00
+                value_change = numpy.float(self.values[i] - self.last_values[i]) / (self.last_values[i])
+                token_update = value_change / 150 *2
+                if float(value_change / 150) == -numpy.inf or float(value_change / 150) == numpy.inf:
+                    token_update = 0.0 
                 if(value_change > 0) and self.token_value[i] < 4.1:
-                    self.token_value[i] = self.token_value[i] + 0.01
-                elif(value_change < 0 and self.token_value[i] > 0.1):
-                    self.token_value[i] = self.token_value[i] - 0.01
+                    self.token_value[i] = self.token_value[i] + token_update *5
+                elif(value_change < 0 and self.token_value[i] > 0.5):
+                    self.token_value[i] = self.token_value[i] + token_update *5
                 else: 
                     self.token_value[i] = self.token_value[i] + 0.00
-                    
-            print(self.token_value)
+                    self.token_value[i] = numpy.maximum(0.0, self.token_value[i])
+            self.token_value = [numpy.mean(self.token_value) for _ in range(self.nr_agents)]       
+            #print("token: ", self.token_value)
+  
             self.last_values = self.values
-            self.values = numpy.zeros(self.nr_agents, dtype=numpy.float32)
+            self.values = numpy.zeros(self.nr_agents)
             
         return transition
