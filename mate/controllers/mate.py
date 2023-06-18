@@ -36,6 +36,7 @@ class MATE(ActorCritic):
         self.values = numpy.zeros(self.nr_agents, dtype=numpy.float32)
         self.last_values = numpy.zeros(self.nr_agents, dtype=numpy.float32)
         self.episode_step = 0
+        self.consensus_on = False
 
     def can_rely_on(self, agent_id, reward, history, next_history):
         if self.mate_mode == STATIC_MODE:
@@ -94,9 +95,7 @@ class MATE(ActorCritic):
                 
                 # prevent negative token values
                 self.token_value[i] = numpy.maximum(lower_bound, self.token_value[i])
-            
-            # surrogate averaging function       
-            #self.token_value = [numpy.mean(self.token_value) for _ in range(self.nr_agents)]   
+  
             #reset episode parameters
             self.last_values = self.values
             self.values = numpy.zeros(self.nr_agents)
@@ -110,7 +109,7 @@ class MATE(ActorCritic):
         request_receive_enabled = [self.sample_no_comm_failure() for _ in range(self.nr_agents)]
         for i, reward, history, next_history in zip(range(self.nr_agents), original_rewards, joint_histories, next_joint_histories):
             self.values[i] += self.get_values(i, torch.tensor(numpy.array([history]), dtype=torch.float32, device=self.device))[0].item()
-            if done:
+            if done and self.consensus_on:
                 self.token_shares[i] = self.generate_token_shares(self.token_value[i])
                 self.token_send_matrix[i][i] = self.token_shares[i][i]
             requests_enabled = i != defector_id or self.defect_mode not in [DEFECT_ALL, DEFECT_SEND]
@@ -118,7 +117,7 @@ class MATE(ActorCritic):
             neighborhood = info["neighbor_agents"][i]
             for j in neighborhood:
                 if requests_enabled:
-                    if done: 
+                    if done and self.consensus_on: 
                         self.token_send_matrix[j][i] = self.token_shares[i][j]
                     assert i != j
                     if  self.can_rely_on(i, reward, history, next_history): # Analyze the "winners" of that step
@@ -126,7 +125,7 @@ class MATE(ActorCritic):
                         transition["request_messages_sent"] += 1
         # 2. Send trust responses
         for i, history, next_history in zip(range(self.nr_agents), joint_histories, next_joint_histories):
-            if done:
+            if done and self.consensus_on:
                 summed_token_shares = sum(self.token_send_matrix[i])
                 self.token_response_matrix[i][i] = summed_token_shares
             neighborhood = info["neighbor_agents"][i]
@@ -143,7 +142,7 @@ class MATE(ActorCritic):
                     accept_trust = -self.token_value[i]
                 for j in neighborhood:
                     assert i != j
-                    if done:
+                    if done and self.consensus_on:
                         self.token_response_matrix[j][i] = summed_token_shares
                     if self.trust_request_matrix[i][j] > 0:
                         self.trust_response_matrix[j][i] = accept_trust
@@ -155,7 +154,7 @@ class MATE(ActorCritic):
             receive_enabled = i != defector_id or self.defect_mode not in [DEFECT_ALL, DEFECT_RECEIVE]
             receive_enabled = receive_enabled and self.sample_no_comm_failure()
             if receive_enabled and len(neighborhood) > 0:
-                if done:
+                if done and self.consensus_on:
                     self.token_value[i] = sum(self.token_response_matrix[i])/self.nr_agents
                 if trust_responses.any():
                     filtered_trust_responses = [trust_responses[x] for x in neighborhood if abs(trust_responses[x]) > 0]
