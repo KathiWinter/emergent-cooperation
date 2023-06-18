@@ -31,6 +31,7 @@ class MATE(ActorCritic):
         self.defect_mode = get_param_or_default(params, "defect_mode", NO_DEFECT)
         self.values = numpy.zeros(self.nr_agents, dtype=numpy.float32)
         self.last_values = numpy.zeros(self.nr_agents, dtype=numpy.float32)
+        self.episode_step = 0
 
     def can_rely_on(self, agent_id, reward, history, next_history):
         if self.mate_mode == STATIC_MODE:
@@ -56,6 +57,7 @@ class MATE(ActorCritic):
         original_rewards = [r for r in rewards]
         self.trust_request_matrix[:] = 0
         self.trust_response_matrix[:] = 0
+        self.episode_step += 1
         # 1. Send trust requests
         defector_id = -1
         if self.defect_mode != NO_DEFECT:
@@ -102,22 +104,33 @@ class MATE(ActorCritic):
                     transition["rewards"][i] += min(filtered_trust_responses)
         if done:
             self.last_rewards_observed = [[] for _ in range(self.nr_agents)]
+            
+            # derive token value from value function
+            sf = 10
+            upper_bound = 4.1
+            lower_bound = 0.1
             for i in range(self.nr_agents):
+                
                 value_change = numpy.float(self.values[i] - self.last_values[i]) / (self.last_values[i])
-                token_update = value_change / 150 *2
-                if float(value_change / 150) == -numpy.inf or float(value_change / 150) == numpy.inf:
+                token_update = value_change / self.episode_step
+                
+                # when value change is too small
+                if abs(token_update) == numpy.inf:
                     token_update = 0.0 
-                if(value_change > 0) and self.token_value[i] < 4.1:
-                    self.token_value[i] = self.token_value[i] + token_update *5
-                elif(value_change < 0 and self.token_value[i] > 0.5):
-                    self.token_value[i] = self.token_value[i] + token_update *5
-                else: 
-                    self.token_value[i] = self.token_value[i] + 0.00
-                    self.token_value[i] = numpy.maximum(0.0, self.token_value[i])
+                    
+                if (value_change > 0 and (self.token_value[i] + token_update * sf) < upper_bound) or (value_change < 0 and (self.token_value[i] + token_update * sf) > lower_bound):
+                    self.token_value[i] = self.token_value[i] + token_update * sf
+                
+                # prevent negative token values
+                self.token_value[i] = numpy.maximum(lower_bound, self.token_value[i])
+            
+            # surrogate averaging function       
             self.token_value = [numpy.mean(self.token_value) for _ in range(self.nr_agents)]       
-            #print("token: ", self.token_value)
-  
+            print("token: ", self.token_value)
+
+            #reset episode parameters
             self.last_values = self.values
             self.values = numpy.zeros(self.nr_agents)
+            self.episode_step = 0
             
         return transition
