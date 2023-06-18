@@ -2,6 +2,7 @@ from mate.utils import get_param_or_default
 from mate.controllers.actor_critic import ActorCritic
 import torch
 import numpy
+import random
 
 STATIC_MODE = "static"
 TD_ERROR_MODE = "td_error"
@@ -29,6 +30,9 @@ class MATE(ActorCritic):
         self.trust_request_matrix = numpy.zeros((self.nr_agents, self.nr_agents), dtype=numpy.float32)
         self.trust_response_matrix = numpy.zeros((self.nr_agents, self.nr_agents), dtype=numpy.float32)
         self.defect_mode = get_param_or_default(params, "defect_mode", NO_DEFECT)
+        self.token_send_matrix = numpy.zeros((self.nr_agents, self.nr_agents), dtype=numpy.float32)
+        self.token_response_matrix = numpy.zeros((self.nr_agents, self.nr_agents), dtype=numpy.float32)
+        self.token_shares = numpy.zeros((self.nr_agents, self.nr_agents), dtype=numpy.float32)
         self.values = numpy.zeros(self.nr_agents, dtype=numpy.float32)
         self.last_values = numpy.zeros(self.nr_agents, dtype=numpy.float32)
         self.episode_step = 0
@@ -50,61 +54,28 @@ class MATE(ActorCritic):
             return reward + self.gamma*next_value - value >= 0
         if self.mate_mode == VALUE_DECOMPOSE_MODE:
             return False
+        
+    def generate_token_shares(self, total):
+        lower_bound = -total
+        upper_bound = +total
+        shares = [random.uniform(lower_bound, upper_bound) for _ in range(self.nr_agents-1)]
+        last_share = total - sum(shares)
+        shares.append(last_share)
+        return shares
 
 
     def prepare_transition(self, joint_histories, joint_action, rewards, next_joint_histories, done, info):
         transition = super(MATE, self).prepare_transition(joint_histories, joint_action, rewards, next_joint_histories, done, info)
         original_rewards = [r for r in rewards]
+        
         self.trust_request_matrix[:] = 0
         self.trust_response_matrix[:] = 0
+        self.token_send_matrix[:] = 0
+        self.token_response_matrix[:] = 0
+        self.token_shares[:] = 0
         self.episode_step += 1
-        # 1. Send trust requests
-        defector_id = -1
-        if self.defect_mode != NO_DEFECT:
-            defector_id = numpy.random.randint(0, self.nr_agents)
-        request_receive_enabled = [self.sample_no_comm_failure() for _ in range(self.nr_agents)]
-        for i, reward, history, next_history in zip(range(self.nr_agents), original_rewards, joint_histories, next_joint_histories):
-            self.values[i] += self.get_values(i, torch.tensor(numpy.array([history]), dtype=torch.float32, device=self.device))[0].item()
-            requests_enabled = i != defector_id or self.defect_mode not in [DEFECT_ALL, DEFECT_SEND]
-            requests_enabled = requests_enabled and self.sample_no_comm_failure()
-            if requests_enabled and self.can_rely_on(i, reward, history, next_history): # Analyze the "winners" of that step
-                neighborhood = info["neighbor_agents"][i]
-                for j in neighborhood:
-                    assert i != j
-                    self.trust_request_matrix[j][i] += self.token_value[i]
-                    transition["request_messages_sent"] += 1
-        # 2. Send trust responses
-        for i, history, next_history in zip(range(self.nr_agents), joint_histories, next_joint_histories):
-            neighborhood = info["neighbor_agents"][i]
-            respond_enabled = i != defector_id or self.defect_mode not in [DEFECT_ALL, DEFECT_RESPONSE]
-            respond_enabled = respond_enabled and self.sample_no_comm_failure()
-            if request_receive_enabled[i]:
-                trust_requests = [self.trust_request_matrix[i][x] for x in neighborhood]
-                if len(trust_requests) > 0:
-                    transition["rewards"][i] += numpy.max(trust_requests)
-            if respond_enabled and len(neighborhood) > 0:
-                if self.can_rely_on(i, transition["rewards"][i], history, next_history):
-                    accept_trust = self.token_value[i]
-                else:
-                    accept_trust = -self.token_value[i]
-                for j in neighborhood:
-                    assert i != j
-                    if self.trust_request_matrix[i][j] > 0:
-                        self.trust_response_matrix[j][i] = accept_trust
-                        if accept_trust > 0:
-                            transition["response_messages_sent"] += 1
-        # 3. Receive trust responses
-        for i, trust_responses in enumerate(self.trust_response_matrix):
-            neighborhood = info["neighbor_agents"][i]
-            receive_enabled = i != defector_id or self.defect_mode not in [DEFECT_ALL, DEFECT_RECEIVE]
-            receive_enabled = receive_enabled and self.sample_no_comm_failure()
-            if receive_enabled and len(neighborhood) > 0 and trust_responses.any():
-                filtered_trust_responses = [trust_responses[x] for x in neighborhood if abs(trust_responses[x]) > 0]
-                if len(filtered_trust_responses) > 0:
-                    transition["rewards"][i] += min(filtered_trust_responses)
+        
         if done:
-            self.last_rewards_observed = [[] for _ in range(self.nr_agents)]
-            
             # derive token value from value function
             sf = 10
             upper_bound = 4.1
@@ -125,12 +96,72 @@ class MATE(ActorCritic):
                 self.token_value[i] = numpy.maximum(lower_bound, self.token_value[i])
             
             # surrogate averaging function       
-            self.token_value = [numpy.mean(self.token_value) for _ in range(self.nr_agents)]       
-            print("token: ", self.token_value)
-
+            #self.token_value = [numpy.mean(self.token_value) for _ in range(self.nr_agents)]   
             #reset episode parameters
             self.last_values = self.values
             self.values = numpy.zeros(self.nr_agents)
-            self.episode_step = 0
+            self.episode_step = 0    
             
+        
+        # 1. Send trust requests
+        defector_id = -1
+        if self.defect_mode != NO_DEFECT:
+            defector_id = numpy.random.randint(0, self.nr_agents)
+        request_receive_enabled = [self.sample_no_comm_failure() for _ in range(self.nr_agents)]
+        for i, reward, history, next_history in zip(range(self.nr_agents), original_rewards, joint_histories, next_joint_histories):
+            self.values[i] += self.get_values(i, torch.tensor(numpy.array([history]), dtype=torch.float32, device=self.device))[0].item()
+            if done:
+                self.token_shares[i] = self.generate_token_shares(self.token_value[i])
+                self.token_send_matrix[i][i] = self.token_shares[i][i]
+            requests_enabled = i != defector_id or self.defect_mode not in [DEFECT_ALL, DEFECT_SEND]
+            requests_enabled = requests_enabled and self.sample_no_comm_failure()
+            neighborhood = info["neighbor_agents"][i]
+            for j in neighborhood:
+                if requests_enabled:
+                    if done: 
+                        self.token_send_matrix[j][i] = self.token_shares[i][j]
+                    assert i != j
+                    if  self.can_rely_on(i, reward, history, next_history): # Analyze the "winners" of that step
+                        self.trust_request_matrix[j][i] += self.token_value[i]
+                        transition["request_messages_sent"] += 1
+        # 2. Send trust responses
+        for i, history, next_history in zip(range(self.nr_agents), joint_histories, next_joint_histories):
+            if done:
+                summed_token_shares = sum(self.token_send_matrix[i])
+                self.token_response_matrix[i][i] = summed_token_shares
+            neighborhood = info["neighbor_agents"][i]
+            respond_enabled = i != defector_id or self.defect_mode not in [DEFECT_ALL, DEFECT_RESPONSE]
+            respond_enabled = respond_enabled and self.sample_no_comm_failure()
+            if request_receive_enabled[i]:
+                trust_requests = [self.trust_request_matrix[i][x] for x in neighborhood]
+                if len(trust_requests) > 0:
+                    transition["rewards"][i] += numpy.max(trust_requests)
+            if respond_enabled and len(neighborhood) > 0:
+                if self.can_rely_on(i, transition["rewards"][i], history, next_history):
+                    accept_trust = self.token_value[i]
+                else:
+                    accept_trust = -self.token_value[i]
+                for j in neighborhood:
+                    assert i != j
+                    if done:
+                        self.token_response_matrix[j][i] = summed_token_shares
+                    if self.trust_request_matrix[i][j] > 0:
+                        self.trust_response_matrix[j][i] = accept_trust
+                        if accept_trust > 0:
+                            transition["response_messages_sent"] += 1
+        # 3. Receive trust responses
+        for i, trust_responses in enumerate(self.trust_response_matrix):
+            neighborhood = info["neighbor_agents"][i]
+            receive_enabled = i != defector_id or self.defect_mode not in [DEFECT_ALL, DEFECT_RECEIVE]
+            receive_enabled = receive_enabled and self.sample_no_comm_failure()
+            if receive_enabled and len(neighborhood) > 0:
+                if done:
+                    self.token_value[i] = sum(self.token_response_matrix[i])/self.nr_agents
+                if trust_responses.any():
+                    filtered_trust_responses = [trust_responses[x] for x in neighborhood if abs(trust_responses[x]) > 0]
+                    if len(filtered_trust_responses) > 0:
+                        transition["rewards"][i] += min(filtered_trust_responses)
+        if done:
+            self.last_rewards_observed = [[] for _ in range(self.nr_agents)]
+            print("token: ", self.token_value)
         return transition
