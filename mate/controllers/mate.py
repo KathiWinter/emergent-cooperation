@@ -36,7 +36,8 @@ class MATE(ActorCritic):
         self.values = numpy.zeros(self.nr_agents, dtype=numpy.float32)
         self.last_values = numpy.zeros(self.nr_agents, dtype=numpy.float32)
         self.episode_step = 0
-        self.consensus_on = False
+        self.consensus_on = True
+        self.episode_return = numpy.zeros(self.nr_agents, dtype=numpy.float32)
 
     def can_rely_on(self, agent_id, reward, history, next_history):
         if self.mate_mode == STATIC_MODE:
@@ -75,22 +76,25 @@ class MATE(ActorCritic):
         self.token_response_matrix[:] = 0
         self.token_shares[:] = 0
         self.episode_step += 1
+        self.episode_return += rewards
         
         if done:
             # derive token value from value function
-            sf = 10
-            upper_bound = 4.1
             lower_bound = 0.1
             for i in range(self.nr_agents):
                 
-                value_change = numpy.float(self.values[i] - self.last_values[i]) / (self.last_values[i])
+                value_change = numpy.float(self.values[i] - self.last_values[i]) / abs(self.last_values[i])
+        
+                #print(numpy.float(self.values[i] - self.last_values[i]))
                 token_update = value_change / self.episode_step
                 
+                sf = abs(self.episode_return[i])
+                #print(abs(self.episode_return[i]))
                 # when value change is too small
                 if abs(token_update) == numpy.inf:
                     token_update = 0.0 
                     
-                if (value_change > 0 and (self.token_value[i] + token_update * sf) < upper_bound) or (value_change < 0 and (self.token_value[i] + token_update * sf) > lower_bound):
+                if value_change > 0 or (value_change < 0 and (self.token_value[i] + token_update * sf) > lower_bound):
                     self.token_value[i] = self.token_value[i] + token_update * sf
                 
                 # prevent negative token values
@@ -162,5 +166,6 @@ class MATE(ActorCritic):
                         transition["rewards"][i] += min(filtered_trust_responses)
         if done:
             self.last_rewards_observed = [[] for _ in range(self.nr_agents)]
+            self.episode_return = numpy.zeros(self.nr_agents, dtype=numpy.float32)
             print("token: ", self.token_value)
         return transition

@@ -90,7 +90,7 @@ class CoinGameEnvironment(Environment):
             old_position = self.coin.position
             new_position = random.choice([pos for pos in self.positions if pos != old_position])
             self.coin.reset(new_position)
-        return rewards, infos
+        return rewards * 1, infos
 
     def get_metric_indices(self, metric):
         if metric == "own_coin_prob":
