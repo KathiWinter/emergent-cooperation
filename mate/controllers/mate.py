@@ -38,7 +38,7 @@ class MATE(ActorCritic):
         self.episode_step = 0
         self.consensus_on = True
         self.episode_return = numpy.zeros(self.nr_agents, dtype=numpy.float32)
-        self.sf = numpy.zeros(self.nr_agents, dtype=numpy.float32)
+        self.update_rate = numpy.zeros(self.nr_agents, dtype=numpy.float32)
 
 
     def can_rely_on(self, agent_id, reward, history, next_history):
@@ -90,14 +90,14 @@ class MATE(ActorCritic):
            
                 token_update = value_change / self.episode_step
                 
-                self.sf[i] = numpy.mean([self.sf[i], abs(self.episode_return[i])])
+                self.update_rate[i] = numpy.maximum(self.update_rate[i], abs(self.episode_return[i]))
        
                 # if value change is too small
                 if abs(token_update) == numpy.inf:
                     token_update = 0.0 
                     
-                if value_change > 0 or (value_change < 0 and (self.token_value[i] + token_update * self.sf[i]) > lower_bound):
-                    self.token_value[i] = self.token_value[i] + token_update * self.sf[i]
+                if value_change > 0 or (value_change < 0 and (self.token_value[i] + token_update * self.update_rate[i]) > lower_bound):
+                    self.token_value[i] = self.token_value[i] + token_update * self.update_rate[i]
                 
                 # prevent negative token values
                 self.token_value[i] = numpy.maximum(lower_bound, self.token_value[i])
