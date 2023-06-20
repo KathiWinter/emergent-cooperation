@@ -38,6 +38,8 @@ class MATE(ActorCritic):
         self.episode_step = 0
         self.consensus_on = True
         self.episode_return = numpy.zeros(self.nr_agents, dtype=numpy.float32)
+        self.sf = numpy.zeros(self.nr_agents, dtype=numpy.float32)
+
 
     def can_rely_on(self, agent_id, reward, history, next_history):
         if self.mate_mode == STATIC_MODE:
@@ -85,17 +87,17 @@ class MATE(ActorCritic):
                 
                 value_change = numpy.float(self.values[i] - self.last_values[i]) / abs(self.last_values[i])
         
-                #print(numpy.float(self.values[i] - self.last_values[i]))
+           
                 token_update = value_change / self.episode_step
                 
-                sf = abs(self.episode_return[i])
-                #print(abs(self.episode_return[i]))
-                # when value change is too small
+                self.sf[i] = numpy.mean([self.sf[i], abs(self.episode_return[i])])
+       
+                # if value change is too small
                 if abs(token_update) == numpy.inf:
                     token_update = 0.0 
                     
-                if value_change > 0 or (value_change < 0 and (self.token_value[i] + token_update * sf) > lower_bound):
-                    self.token_value[i] = self.token_value[i] + token_update * sf
+                if value_change > 0 or (value_change < 0 and (self.token_value[i] + token_update * self.sf[i]) > lower_bound):
+                    self.token_value[i] = self.token_value[i] + token_update * self.sf[i]
                 
                 # prevent negative token values
                 self.token_value[i] = numpy.maximum(lower_bound, self.token_value[i])
