@@ -94,7 +94,7 @@ class MATE(ActorCritic):
                 if len(self.update_rate[i]) > 10:
                     self.update_rate[i].pop(0)
                 
-                ur = numpy.mean(self.update_rate[i])
+                ur = numpy.max(self.update_rate[i])
        
                 # if value change is too small
                 if abs(token_update) == numpy.inf:
