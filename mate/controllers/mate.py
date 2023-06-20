@@ -37,6 +37,7 @@ class MATE(ActorCritic):
         self.last_values = numpy.zeros(self.nr_agents, dtype=numpy.float32)
         self.episode_step = 0
         self.consensus_on = True
+        self.max_reward = [0.1 for _ in range(self.nr_agents)]
         self.episode_return = numpy.zeros(self.nr_agents, dtype=numpy.float32)
         self.update_rate = [[] for _ in range(self.nr_agents)]
 
@@ -80,6 +81,11 @@ class MATE(ActorCritic):
         self.episode_step += 1
         self.episode_return += rewards
         
+        for i in range(self.nr_agents):
+            for r in rewards:
+                if r > self.max_reward[i]:
+                    r = self.max_reward[i]
+        
         if done:
             # derive token value from value function
             lower_bound = 0.1
@@ -90,11 +96,8 @@ class MATE(ActorCritic):
            
                 token_update = value_change / self.episode_step
                 
-                self.update_rate[i].append(self.episode_return[i]) 
-                if len(self.update_rate[i]) > 10:
-                    self.update_rate[i].pop(0)
                 
-                ur = numpy.max(self.update_rate[i])
+                ur = 10 * self.max_reward[i]
        
                 # if value change is too small
                 if abs(token_update) == numpy.inf:
