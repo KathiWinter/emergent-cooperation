@@ -9,7 +9,14 @@ ALGORITHM_NAMES = {
     "IAC_": "Naive Learning",
     "Gifting-ZEROSUM_": "Gifting (Zero-Sum)",
     "Gifting-BUDGET_": "Gifting (Budget)",
-    "MATE-TD_": "MATE",
+    "MATE-TD_": "MATE - 1",
+    "MATE-TD-T1": "MATE - 1",
+    "MATE-TD-T2": "MATE - 2",
+    "MATE-TD-T4": "MATE - 4",
+    "MATE-TD-T0.25": "MATE - 0.25",
+    "MATE-TD-T0.5": "MATE - 0.5",
+    "MATE-TD-Consensus": "MATE Consensus",
+    "MATE-TD-RANDOM": "MATE Random [0.25,0.5,1,2,4]",
     "MATE-REWARD_": "MATE (reward-based)",
     "LIO_": "LIO",
     "MATE-TD-DEFECT_COMPLETE_": "MATE (defect=Complete)",
@@ -39,7 +46,7 @@ params["domain_name"] = sys.argv[2]
 env = domains.make(params)
 params["filter_size"] = 10
 params["nr_runs"] = 20
-params["directory"] = "output"
+params["directory"] = "output_plot"
 metric = "undiscounted_returns"
 params["metric_index"] = None
 params["norm_index"] = None
@@ -75,7 +82,7 @@ filename_pdf = filename_prefix + ".pdf"
 data_prefix_pattern = params["data_prefix_pattern"]
 
 if baseline_comparison:
-    algorithm_info = [("b","MATE-TD_"), ("c","MATE-REWARD_"), ("r", "LIO_"), ("magenta","Gifting-ZEROSUM_"), ("darkorange", "Gifting-BUDGET_"), ("k","IAC_"), ("darkblue", "Random_")]
+    algorithm_info = [("b","MATE-TD_"), ("b","MATE-TD-T1"), ("darkviolet","MATE-TD-Consensus"), ("sandybrown","MATE-TD-RANDOM"), ("darkorange","MATE-TD-T0.5"),  ("c","MATE-REWARD_"), ("magenta","Gifting-ZEROSUM_"), ("darkorange", "Gifting-BUDGET_"), ("k","IAC_"), ("darkblue", "Random_")]
 else:
     algorithm_info = [("b","MATE-TD_"), ("purple","MATE-TD-DEFECT_COMPLETE_"), ("darkgray","MATE-TD-DEFECT_REQUEST_"), ("c","MATE-TD-DEFECT_RESPONSE_"), ("r", "LIO_"), ("k","IAC_")]
 
@@ -114,6 +121,7 @@ if not baseline_comparison and params["y_label"] == Y_LABEL["undiscounted_return
     legend = plot.legend()
 plot.tight_layout()
 ax.grid(which='both', linestyle='--')
+ax.legend(bbox_to_anchor=(0.5, 1))
 plot.savefig(join(path, filename), bbox_inches='tight')
 plot.savefig(join(path, filename_png), bbox_inches='tight')
 plot.savefig(join(path, filename_pdf), bbox_inches='tight')
