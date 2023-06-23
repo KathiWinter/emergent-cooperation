@@ -36,8 +36,8 @@ class MATE(ActorCritic):
         self.values = numpy.zeros(self.nr_agents, dtype=numpy.float32)
         self.last_values = numpy.zeros(self.nr_agents, dtype=numpy.float32)
         self.episode_step = 0
-        self.consensus_on = False
-        self.max_reward = [0.1 for _ in range(self.nr_agents)]
+        self.consensus_on = True
+        self.max_reward = [-numpy.inf for _ in range(self.nr_agents)]
         self.episode_return = numpy.zeros(self.nr_agents, dtype=numpy.float32)
         self.update_rate = [[] for _ in range(self.nr_agents)]
 
@@ -83,22 +83,20 @@ class MATE(ActorCritic):
         
         for i in range(self.nr_agents):
             for r in rewards:
-                if abs(r) > self.max_reward[i]:
+                if r > self.max_reward[i] and r != 0.0:
                     self.max_reward[i] = abs(r)
-        
+                        
         if done:
             # derive token value from value function
             lower_bound = 0.1
             for i in range(self.nr_agents):
-                
-                value_change = numpy.float(self.values[i] - self.last_values[i]) / abs(self.last_values[i])
-        
-           
+                #print(transition["rewards"][i] )
+                value_change = numpy.float(self.values[i] - self.last_values[i]) / self.last_values[i]
+
                 token_update = value_change / self.episode_step
+            
+                ur = 10*self.max_reward[i]
                 
-                
-                ur = 2 * self.max_reward[i]
-       
                 # if value change is too small
                 if abs(token_update) == numpy.inf:
                     token_update = 0.0 
@@ -114,7 +112,6 @@ class MATE(ActorCritic):
             self.values = numpy.zeros(self.nr_agents)
             self.episode_step = 0    
             
-        self.token_value = [1.5, 1.5, 1.5, 1.5]
         # 1. Send trust requests
         defector_id = -1
         if self.defect_mode != NO_DEFECT:
