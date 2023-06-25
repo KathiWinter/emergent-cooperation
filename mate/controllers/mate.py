@@ -26,19 +26,19 @@ class MATE(ActorCritic):
         super(MATE, self).__init__(params)
         self.last_rewards_observed = [[] for _ in range(self.nr_agents)]
         self.mate_mode = get_param_or_default(params, "mate_mode", STATIC_MODE)
-        self.token_value = get_param_or_default(params, "token_value", [0.1 for _ in range(self.nr_agents)])#numpy.zeros(self.nr_agents, dtype=numpy.float32))
-        self.trust_request_matrix = numpy.zeros((self.nr_agents, self.nr_agents), dtype=numpy.float32)
-        self.trust_response_matrix = numpy.zeros((self.nr_agents, self.nr_agents), dtype=numpy.float32)
+        self.token_value = get_param_or_default(params, "token_value", [0.1 for _ in range(self.nr_agents)])#numpy.zeros(self.nr_agents, dtype=float))
+        self.trust_request_matrix = numpy.zeros((self.nr_agents, self.nr_agents), dtype=float)
+        self.trust_response_matrix = numpy.zeros((self.nr_agents, self.nr_agents), dtype=float)
         self.defect_mode = get_param_or_default(params, "defect_mode", NO_DEFECT)
-        self.token_send_matrix = numpy.zeros((self.nr_agents, self.nr_agents), dtype=numpy.float32)
-        self.token_response_matrix = numpy.zeros((self.nr_agents, self.nr_agents), dtype=numpy.float32)
-        self.token_shares = numpy.zeros((self.nr_agents, self.nr_agents), dtype=numpy.float32)
-        self.values = numpy.zeros(self.nr_agents, dtype=numpy.float32)
-        self.last_values = numpy.zeros(self.nr_agents, dtype=numpy.float32)
+        self.token_send_matrix = numpy.zeros((self.nr_agents, self.nr_agents), dtype=float)
+        self.token_response_matrix = numpy.zeros((self.nr_agents, self.nr_agents), dtype=float)
+        self.token_shares = numpy.zeros((self.nr_agents, self.nr_agents), dtype=float)
+        self.values = numpy.zeros(self.nr_agents, dtype=float)
+        self.last_values = numpy.zeros(self.nr_agents, dtype=float)
         self.episode_step = 0
         self.consensus_on = True
-        self.max_reward = [-numpy.inf for _ in range(self.nr_agents)]
-        self.episode_return = numpy.zeros(self.nr_agents, dtype=numpy.float32)
+        self.max_reward = [1 for _ in range(self.nr_agents)]
+        self.episode_return = numpy.zeros(self.nr_agents, dtype=float)
         self.update_rate = [[] for _ in range(self.nr_agents)]
 
 
@@ -52,8 +52,8 @@ class MATE(ActorCritic):
             self.last_rewards_observed[agent_id].append(reward)
             return reward >= last_reward
         if self.mate_mode == TD_ERROR_MODE:
-            history = torch.tensor(numpy.array([history]), dtype=torch.float32, device=self.device)
-            next_history = torch.tensor(numpy.array([next_history]), dtype=torch.float32, device=self.device)
+            history = torch.tensor(numpy.array([history]), dtype=torch.float, device=self.device)
+            next_history = torch.tensor(numpy.array([next_history]), dtype=torch.float, device=self.device)
             value = self.get_values(agent_id, history)[0].item()
             next_value = self.get_values(agent_id, next_history)[0].item()
             return reward + self.gamma*next_value - value >= 0
@@ -83,20 +83,20 @@ class MATE(ActorCritic):
         
         for i in range(self.nr_agents):
             for r in rewards:
-                if r > self.max_reward[i] and r != 0.0:
-                    self.max_reward[i] = abs(r)
+                if r > self.max_reward[i]:
+                    self.max_reward[i] = r
                         
         if done:
             # derive token value from value function
             lower_bound = 0.1
             for i in range(self.nr_agents):
                 #print(transition["rewards"][i] )
-                value_change = numpy.float(self.values[i] - self.last_values[i]) / self.last_values[i]
+                value_change = float(self.values[i] - self.last_values[i]) / self.last_values[i]
 
                 token_update = value_change / self.episode_step
             
                 ur = 10*self.max_reward[i]
-                
+  
                 # if value change is too small
                 if abs(token_update) == numpy.inf:
                     token_update = 0.0 
@@ -118,7 +118,7 @@ class MATE(ActorCritic):
             defector_id = numpy.random.randint(0, self.nr_agents)
         request_receive_enabled = [self.sample_no_comm_failure() for _ in range(self.nr_agents)]
         for i, reward, history, next_history in zip(range(self.nr_agents), original_rewards, joint_histories, next_joint_histories):
-            self.values[i] += self.get_values(i, torch.tensor(numpy.array([history]), dtype=torch.float32, device=self.device))[0].item()
+            self.values[i] += self.get_values(i, torch.tensor(numpy.array([history]), dtype=torch.float, device=self.device))[0].item()
             if done and self.consensus_on:
                 self.token_shares[i] = self.generate_token_shares(self.token_value[i])
                 self.token_send_matrix[i][i] = self.token_shares[i][i]
@@ -172,6 +172,6 @@ class MATE(ActorCritic):
                         transition["rewards"][i] += min(filtered_trust_responses)
         if done:
             self.last_rewards_observed = [[] for _ in range(self.nr_agents)]
-            self.episode_return = numpy.zeros(self.nr_agents, dtype=numpy.float32)
+            self.episode_return = numpy.zeros(self.nr_agents, dtype=float)
             print("token: ", self.token_value)
         return transition
