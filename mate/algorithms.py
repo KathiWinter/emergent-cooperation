@@ -74,6 +74,11 @@ def make(params):
         return mate.MATE(params)
     if algorithm_name == "MATE-TD":
         params["mate_mode"] = "td_error"
+        params["consensus_on"] = True
+        return mate.MATE(params)
+    if algorithm_name == "MATE-TD-NC":
+        params["mate_mode"] = "td_error"
+        params["consensus_on"] = False
         return mate.MATE(params)
     if algorithm_name == "MATE-TD-0.1":
         params["mate_mode"] = "td_error"

@@ -5,4 +5,6 @@
 python train.py CoinGame-4 MATE-TD
 python train.py CoinGame-4 MATE-TD
 python train.py CoinGame-4 MATE-TD
+python train.py CoinGame-4 MATE-TD
+python train.py CoinGame-4 MATE-TD
 
