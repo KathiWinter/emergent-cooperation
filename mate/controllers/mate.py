@@ -37,7 +37,8 @@ class MATE(ActorCritic):
         self.last_values = numpy.zeros(self.nr_agents, dtype=float)
         self.episode_step = 0
         self.consensus_on = get_param_or_default(params, "consensus_on", True)
-        self.max_reward = [1 for _ in range(self.nr_agents)]
+        self.max_reward = [0 for _ in range(self.nr_agents)]
+        self.min_reward = [0 for _ in range(self.nr_agents)]
         self.episode_return = numpy.zeros(self.nr_agents, dtype=float)
         self.update_rate = [[] for _ in range(self.nr_agents)]
 
@@ -85,28 +86,30 @@ class MATE(ActorCritic):
             for r in rewards:
                 if r > self.max_reward[i]:
                     self.max_reward[i] = r
+                if r < self.min_reward[i]:
+                    self.min_reward[i] = r
 
         if done:
             # derive token value from value function
             lower_bound = 0.1
             for i in range(self.nr_agents):
-                #print(transition["rewards"][i] )
-                value_change = float(self.values[i] - self.last_values[i]) / self.last_values[i]
+   
+                value_change = float(self.values[i] - self.last_values[i]) / abs(self.last_values[i])
 
                 token_update = value_change / self.episode_step
             
-                ur = 10*self.max_reward[i]
+                ur = self.episode_step * 0.1 * abs(numpy.mean([self.max_reward[i],self.min_reward[i]])) / (self.nr_agents-1)
   
                 # if value change is too small
                 if abs(token_update) == numpy.inf:
                     token_update = 0.0 
                     
-                if value_change > 0 or (value_change < 0 and (self.token_value[i] + token_update * ur) > lower_bound):
+                if 0 < value_change or (value_change < 0 and (self.token_value[i] + token_update * ur) > lower_bound):
                     self.token_value[i] = self.token_value[i] + token_update * ur
                 
                 # prevent negative token values
                 self.token_value[i] = numpy.maximum(lower_bound, self.token_value[i])
-  
+     
             #reset episode parameters
             self.last_values = self.values
             self.values = numpy.zeros(self.nr_agents)
