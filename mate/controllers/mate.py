@@ -98,7 +98,7 @@ class MATE(ActorCritic):
 
                 token_update = value_change / self.episode_step
             
-                ur = 10 * self.max_reward[i] 
+                ur = (0.1 * self.episode_step * 2/3) * self.max_reward[i] 
   
                 # if value change is too small
                 if abs(token_update) == numpy.inf:
