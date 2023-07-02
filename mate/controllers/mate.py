@@ -98,18 +98,24 @@ class MATE(ActorCritic):
 
                 token_update = value_change / self.episode_step
             
-                ur = self.episode_step * 0.1 * abs(numpy.mean([self.max_reward[i],self.min_reward[i]])) / (self.nr_agents-1)
+                ur = 10 * self.max_reward[i] 
   
                 # if value change is too small
                 if abs(token_update) == numpy.inf:
                     token_update = 0.0 
                     
-                if 0 < value_change or (value_change < 0 and (self.token_value[i] + token_update * ur) > lower_bound):
+                if 0 < value_change  or (value_change < 0 and (self.token_value[i] + token_update * ur) > lower_bound):
                     self.token_value[i] = self.token_value[i] + token_update * ur
                 
                 # prevent negative token values
                 self.token_value[i] = numpy.maximum(lower_bound, self.token_value[i])
-     
+            
+
+            # mean_token = numpy.mean(self.token_value)
+  
+            # for i in range(len(self.token_value)):
+            #     self.token_value[i] = mean_token
+                
             #reset episode parameters
             self.last_values = self.values
             self.values = numpy.zeros(self.nr_agents)
