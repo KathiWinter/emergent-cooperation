@@ -26,7 +26,7 @@ class MATE(ActorCritic):
         super(MATE, self).__init__(params)
         self.last_rewards_observed = [[] for _ in range(self.nr_agents)]
         self.mate_mode = get_param_or_default(params, "mate_mode", STATIC_MODE)
-        self.token_value = get_param_or_default(params, "token_value", [0.1 for _ in range(self.nr_agents)])#numpy.zeros(self.nr_agents, dtype=float))
+        self.token_value = get_param_or_default(params, "token_value", [0 for _ in range(self.nr_agents)])#numpy.zeros(self.nr_agents, dtype=float))
         self.trust_request_matrix = numpy.zeros((self.nr_agents, self.nr_agents), dtype=float)
         self.trust_response_matrix = numpy.zeros((self.nr_agents, self.nr_agents), dtype=float)
         self.defect_mode = get_param_or_default(params, "defect_mode", NO_DEFECT)
@@ -38,11 +38,11 @@ class MATE(ActorCritic):
         self.episode_step = 0
         self.consensus_on = get_param_or_default(params, "consensus_on", True)
         self.max_reward = [0 for _ in range(self.nr_agents)]
-        self.min_reward = [0 for _ in range(self.nr_agents)]
+        self.rewards = [[] for _ in range(self.nr_agents)]
         self.episode_return = numpy.zeros(self.nr_agents, dtype=float)
         self.update_rate = [[] for _ in range(self.nr_agents)]
-
-
+        self.episode = 0
+ 
     def can_rely_on(self, agent_id, reward, history, next_history):
         if self.mate_mode == STATIC_MODE:
             is_empty = self.last_rewards_observed[agent_id]
@@ -84,37 +84,40 @@ class MATE(ActorCritic):
        
         for i in range(self.nr_agents):
             for r in rewards:
-                if r > self.max_reward[i]:
-                    self.max_reward[i] = r
-                if r < self.min_reward[i]:
-                    self.min_reward[i] = r
+                if r != 0 and not r in self.rewards[i]:
+                    self.rewards[i].append(r)
+            if len(self.rewards[i]) > 0:
+                self.max_reward[i] = numpy.max(self.rewards[i])
 
-        if done:
+
+        if done and self.episode % 10 == 0:
             # derive token value from value function
-            lower_bound = 0.1
+         
             for i in range(self.nr_agents):
-   
+                
                 value_change = float(self.values[i] - self.last_values[i]) / abs(self.last_values[i])
+                transition["value_gradients"][i] = value_change
+                transition["values"][i] = self.values[i]
+           
 
-                token_update = value_change / self.episode_step
-            
-                ur = (0.1 * self.episode_step * 2/3) * self.max_reward[i] 
-  
+                token_update = value_change 
+                ur = 0.1 * self.max_reward[i]
+                
                 # if value change is too small
                 if abs(token_update) == numpy.inf:
                     token_update = 0.0 
                     
-                if 0 < value_change  or (value_change < 0 and (self.token_value[i] + token_update * ur) > lower_bound):
+                if 0 < value_change  or (value_change < 0 and (self.token_value[i] + token_update * ur) > 0.0):
                     self.token_value[i] = self.token_value[i] + token_update * ur
                 
                 # prevent negative token values
-                self.token_value[i] = numpy.maximum(lower_bound, self.token_value[i])
+                self.token_value[i] = numpy.maximum(0.0, self.token_value[i])
             
 
-            # mean_token = numpy.mean(self.token_value)
+            mean_token = numpy.mean(self.token_value)
   
-            # for i in range(len(self.token_value)):
-            #     self.token_value[i] = mean_token
+            for i in range(len(self.token_value)):
+                self.token_value[i] = mean_token
                 
             #reset episode parameters
             self.last_values = self.values
@@ -180,6 +183,7 @@ class MATE(ActorCritic):
                     if len(filtered_trust_responses) > 0:
                         transition["rewards"][i] += min(filtered_trust_responses)
         if done:
+            self.episode += 1
             self.last_rewards_observed = [[] for _ in range(self.nr_agents)]
             self.episode_return = numpy.zeros(self.nr_agents, dtype=float)
             print(self.token_value)
