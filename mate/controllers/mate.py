@@ -92,32 +92,33 @@ class MATE(ActorCritic):
 
         if done and self.episode % 10 == 0:
             # derive token value from value function
-         
-            for i in range(self.nr_agents):
-                
-                value_change = float(self.values[i] - self.last_values[i]) / abs(self.last_values[i])
-                transition["value_gradients"][i] = value_change
-                transition["values"][i] = self.values[i]
-           
-
-                token_update = value_change 
-                ur = 0.1 * self.max_reward[i]
-                
-                # if value change is too small
-                if abs(token_update) == numpy.inf:
-                    token_update = 0.0 
-                    
-                if 0 < value_change  or (value_change < 0 and (self.token_value[i] + token_update * ur) > 0.0):
-                    self.token_value[i] = self.token_value[i] + token_update * ur
-                
-                # prevent negative token values
-                self.token_value[i] = numpy.maximum(0.0, self.token_value[i])
+            if self.episode > 9:
+                for i in range(self.nr_agents):
+                    if self.last_values[i] != 0:
+                        value_change = float(self.values[i] - self.last_values[i]) / abs(self.last_values[i])
+                    else:
+                        value_change = 0
+                    transition["value_gradients"][i] = value_change
+                    transition["values"][i] = self.values[i]
+                    print("value: ", self.values[i] , "last value: ",self.last_values[i] )
             
+                    token_update = value_change 
+                    ur = 0.1 * self.max_reward[i]
+                    
+                    # if value change is too small
+                    if abs(token_update) == numpy.inf:
+                        token_update = 0.0 
+                        
+                    self.token_value[i] = self.token_value[i] + token_update * ur
+                    
+                    # prevent negative token values
+                    self.token_value[i] = numpy.maximum(0.0, self.token_value[i])
+                
 
-            mean_token = numpy.mean(self.token_value)
-  
-            for i in range(len(self.token_value)):
-                self.token_value[i] = mean_token
+                # mean_token = numpy.mean(self.token_value)
+    
+                # for i in range(len(self.token_value)):
+                #     self.token_value[i] = mean_token
                 
             #reset episode parameters
             self.last_values = self.values
@@ -184,6 +185,7 @@ class MATE(ActorCritic):
                         transition["rewards"][i] += min(filtered_trust_responses)
         if done:
             self.episode += 1
+
             self.last_rewards_observed = [[] for _ in range(self.nr_agents)]
             self.episode_return = numpy.zeros(self.nr_agents, dtype=float)
             print(self.token_value)
