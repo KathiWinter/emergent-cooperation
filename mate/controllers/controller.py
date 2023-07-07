@@ -102,7 +102,9 @@ class Controller:
             "joint_old_probs":joint_old_probs,
             "request_messages_sent": 0,
             "response_messages_sent": 0,
-            "token_values": [[] for _ in range(self.nr_agents)]}
+            "token_values": [[] for _ in range(self.nr_agents)],
+            "value_gradients": [[] for _ in range(self.nr_agents)],
+            "values": [[] for _ in range(self.nr_agents)]}
 
     def update_step(self):
         pass
