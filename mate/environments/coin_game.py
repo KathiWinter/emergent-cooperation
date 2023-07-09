@@ -68,8 +68,11 @@ class CoinGameEnvironment(Environment):
         self.agents = [MovableAgent(i, self.width, self.height, self.view_range) for i in range(self.nr_agents)]
         self.positions = [(x, y) for x in range(self.width) for y in range(self.height)]
         self.coin = Coin(self.nr_agents)
+        self.penalty = [-1 for _ in range(self.nr_agents)]
 
+     
     def perform_step(self, joint_action):
+
         rewards, infos = super(CoinGameEnvironment, self).perform_step(joint_action)
         assert not self.is_done(), "Episode terminated at time step {}. Please, reset before calling 'step'."\
             .format(self.time_step)
@@ -83,9 +86,11 @@ class CoinGameEnvironment(Environment):
                 coin_collected = True
                 rewards[agent.agent_id] += 1
                 if agent.agent_id != self.coin.agent_id:
-                    rewards[self.coin.agent_id] -= 2
+                    rewards[self.coin.agent_id] += self.penalty[agent.agent_id]
                 else:
                     self.domain_counts[2] += 1
+                    self.penalty[agent.agent_id] = -1
+            self.penalty[agent.agent_id] -= 1
         if coin_collected:
             old_position = self.coin.position
             new_position = random.choice([pos for pos in self.positions if pos != old_position])

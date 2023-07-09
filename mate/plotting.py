@@ -91,16 +91,20 @@ def plot_runs(params):
                 json_data = load_json(json_file)
                 if stats_label == "domain_values":
                     if metric_index is None:
-                        return_values = numpy.sum(json_data["undiscounted_returns"], axis=0)
+                        #values1 = numpy.sum(json_data["values"], axis=0)
+                        values1 , _= zip(*(json_data["value_gradients"]))
+                        #values1 = [x[0] for x in values1]
                     else:  
-                        return_values = [value[metric_index] for value in json_data[stats_label]]
+                        values1 = [value[metric_index] for value in json_data[stats_label]]
                     if norm_index is not None:
-                        old_length = len(return_values)
+                        old_length = len(values1)
                         norm = numpy.array([value[norm_index] for value in json_data[stats_label]])
-                        return_values = numpy.array(return_values)/norm
-                        assertEquals(old_length, len(return_values))
+                        
+                        values1 = numpy.array(values1)#/norm
+                        assertEquals(old_length, len(values1))
+         
                 elif stats_label in ["messages_sent", "response_messages_sent", "request_messages_sent"]:
-                    return_values = json_data[stats_label]
+                    values1 = json_data[stats_label]
                 elif stats_label == "equality":
                     undiscounted_returns = json_data["undiscounted_returns"]
                     def compute_equality(joint_return):
@@ -108,18 +112,18 @@ def plot_runs(params):
                         abs_diff_sum = sum([sum([abs(joint_return[i] - joint_return[j]) for j in range(N)]) for i in range(N)])
                         norm = 2*N*sum(joint_return)
                         return 1 - abs_diff_sum*1.0/norm
-                    return_values = []
+                    values1 = []
                     for i in range(len(undiscounted_returns[0])):
                         joint_return = [returns[i] for returns in undiscounted_returns]
-                        return_values.append(compute_equality(joint_return))
+                        values1.append(compute_equality(joint_return))
                 else:
-                    return_values = numpy.sum(json_data[stats_label], axis=0)
+                    values1 = numpy.sum(json_data[stats_label], axis=0)
                 if data_length is not None:
-                    return_values = return_values[:data_length]
+                    values1 = values1[:data_length]
                 kernel = numpy.ones(filter_size)/filter_size
-                return_values = numpy.convolve(return_values, kernel, mode='valid')
-                return_values /= norm_nr_agents
-                data.append(return_values)
+                values1 = numpy.convolve(values1, kernel, mode='valid')
+                values1 /= norm_nr_agents
+                data.append(values1)
                 directory_count += 1
     if len(data) > 0:
         print(data_prefix_pattern, "{} runs".format(directory_count))
@@ -177,16 +181,16 @@ def plot_run_end(params):
                     json_data = load_json(json_file)
                     if stats_label == "domain_values":
                         if metric_index is None:
-                            return_values = numpy.sum(json_data["undiscounted_returns"], axis=0)
+                            values1 = numpy.sum(json_data["values"], axis=0)
                         else:  
-                            return_values = [value[metric_index] for value in json_data[stats_label]]
+                            values1 = [value[metric_index] for value in json_data[stats_label]]
                         if norm_index is not None:
-                            old_length = len(return_values)
+                            old_length = len(values1)
                             norm = numpy.array([value[norm_index] for value in json_data[stats_label]])
-                            return_values = numpy.array(return_values)/norm
-                            assertEquals(old_length, len(return_values))
+                            values1 = numpy.array(values1)/norm
+                            assertEquals(old_length, len(values1))
                     elif stats_label in ["messages_sent", "response_messages_sent", "request_messages_sent"]:
-                        return_values = json_data[stats_label]
+                        values1 = json_data[stats_label]
                     elif stats_label == "equality":
                         undiscounted_returns = json_data["undiscounted_returns"]
                         def compute_equality(joint_return):
@@ -194,18 +198,18 @@ def plot_run_end(params):
                             abs_diff_sum = sum([sum([abs(joint_return[i] - joint_return[j]) for j in range(N)]) for i in range(N)])
                             norm = 2*N*sum(joint_return)
                             return 1 - abs_diff_sum*1.0/norm
-                        return_values = []
+                        values1 = []
                         for i in range(len(undiscounted_returns[0])):
                             joint_return = [returns[i] for returns in undiscounted_returns]
-                            return_values.append(compute_equality(joint_return))
+                            values1.append(compute_equality(joint_return))
                     else:
-                        return_values = numpy.sum(json_data[stats_label], axis=0)
+                        values1 = numpy.sum(json_data[stats_label], axis=0)
                     if data_length is not None:
-                        return_values = return_values[:data_length]
+                        values1 = values1[:data_length]
                     if plot_mean:
-                        bar_data += list(return_values)
+                        bar_data += list(values1)
                     else:
-                        bar_data.append(numpy.mean(list(return_values)[-1]))
+                        bar_data.append(numpy.mean(list(values1)[-1]))
                     directory_count += 1
         data.append(bar_data)
     if len(data) > 0:

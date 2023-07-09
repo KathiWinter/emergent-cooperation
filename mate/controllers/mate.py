@@ -92,7 +92,7 @@ class MATE(ActorCritic):
                 if r != 0 and not r in self.rewards[i]:
                     self.rewards[i].append(r)
             if len(self.rewards[i]) > 0:
-                self.max_reward[i] = numpy.max(self.rewards[i])
+                self.max_reward[i] = numpy.min(self.rewards[i]) / 2
 
         if done and self.consensus_on:
             for i in range(self.nr_agents):

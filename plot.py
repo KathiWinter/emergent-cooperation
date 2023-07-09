@@ -9,7 +9,8 @@ ALGORITHM_NAMES = {
     "IAC_": "Naive Learning",
     "Gifting-ZEROSUM_": "Gifting (Zero-Sum)",
     "Gifting-BUDGET_": "Gifting (Budget)",
-    "MATE-TD_": "MATE - 1",
+    "MATE-TD_": "MATE - Consensus",
+    "MATE-TD-NC": "Mate no Consensus",
     "MATE-TD-T1": "MATE - 1",
     "MATE-TD-T2": "MATE - 2",
     "MATE-TD-T4": "MATE - 4",
@@ -30,7 +31,9 @@ Y_LABEL = {
     "discounted_returns": "collective discounted return",
     "own_coin_prob": "P(own coin)",
     "peace": "Peace (P)",
-    "sustainability": "Sustainability (S)"
+    "sustainability": "Sustainability (S)",
+    "token": "Token",
+    "values": "Token"
 }
 
 LEGEND_CONFIG = {
@@ -47,11 +50,11 @@ env = domains.make(params)
 params["filter_size"] = 10
 params["nr_runs"] = 20
 params["directory"] = "output_plot"
-metric = "undiscounted_returns"
+metric = "values"#"undiscounted_returns"
 params["metric_index"] = None
 params["norm_index"] = None
 params["stats_label"] = "domain_values"
-params["y_label"] = Y_LABEL["undiscounted_returns"]
+params["y_label"] = Y_LABEL["values"]#Y_LABEL["undiscounted_returns"]
 params["data_length"] = params["nr_epochs"]
 if len(sys.argv) > 3:
     params["stats_label"] = "domain_values"
@@ -69,7 +72,7 @@ if len(sys.argv) > 4:
 if params["domain_name"].startswith("Matrix-"):
     params["stats_label"] = "domain_values"
     params["norm_index"] = 0
-    params["y_label"] = Y_LABEL["undiscounted_returns"]
+    params["y_label"] = Y_LABEL["values"]#Y_LABEL["undiscounted_returns"]
     params["norm_nr_agents"] = 1
 params["x_label"] = "epoch"
 filename_prefix = "{}_{}".format(params["domain_name"].lower(), metric.lower())
@@ -82,7 +85,7 @@ filename_pdf = filename_prefix + ".pdf"
 data_prefix_pattern = params["data_prefix_pattern"]
 
 if baseline_comparison:
-    algorithm_info = [("b","MATE-TD_"), ("b","MATE-TD-T1"), ("darkviolet","MATE-TD-Consensus"), ("sandybrown","MATE-TD-RANDOM"), ("darkorange","MATE-TD-T0.5"),  ("c","MATE-REWARD_"), ("magenta","Gifting-ZEROSUM_"), ("darkorange", "Gifting-BUDGET_"), ("k","IAC_"), ("darkblue", "Random_")]
+    algorithm_info = [("darkorange","MATE-TD_"), ("darkorange","MATE-TD-NC"), ("darkviolet","MATE-TD-Consensus"), ("sandybrown","MATE-TD-RANDOM"), ("darkorange","MATE-TD-T0.5"),  ("c","MATE-REWARD_"), ("magenta","Gifting-ZEROSUM_"), ("darkorange", "Gifting-BUDGET_"), ("k","IAC_"), ("darkblue", "Random_")]
 else:
     algorithm_info = [("b","MATE-TD_"), ("purple","MATE-TD-DEFECT_COMPLETE_"), ("darkgray","MATE-TD-DEFECT_REQUEST_"), ("c","MATE-TD-DEFECT_RESPONSE_"), ("r", "LIO_"), ("k","IAC_")]
 
@@ -103,21 +106,19 @@ for color, algorithm_name in algorithm_info:
         plot.plot([0,params["data_length"]-1], [-3, -3], linestyle="dashed", color=color, label="Random")
     else:
         plotting.plot_runs(params)
-if params["domain_name"].startswith("Matrix-IPD"):
-    # Number from the original paper
-    plot.plot([0,params["data_length"]-1], [-2.4, -2.4], linestyle="dashed", color="purple", label="LOLA-PG")
+# if params["domain_name"].startswith("Matrix-IPD"):
+#     # Number from the original paper
+#     plot.plot([0,params["data_length"]-1], [-2.4, -2.4], linestyle="dashed", color="purple", label="LOLA-PG")
 if params["domain_name"] == "CoinGame-2":
     if params["y_label"] == Y_LABEL["own_coin_prob"]:
         # Number from the original paper
         plot.plot([0,params["data_length"]-1], [0.82, 0.82], linestyle="dashed", color="purple", label="LOLA-PG")
-    if params["y_label"] == Y_LABEL["undiscounted_returns"]:
-        # Number from the original paper
-        plot.plot([0,params["data_length"]-1], [16, 16], linestyle="dashed", color="purple", label="LOLA-PG")
+
 legend_position = None
-if params["domain_name"] in LEGEND_CONFIG and params["y_label"] == Y_LABEL["undiscounted_returns"]:
+if params["domain_name"] in LEGEND_CONFIG and params["y_label"] == Y_LABEL["values"]:
     legend_position = LEGEND_CONFIG[params["domain_name"]]
     legend = plot.legend(loc=legend_position)
-if not baseline_comparison and params["y_label"] == Y_LABEL["undiscounted_returns"]:
+if not baseline_comparison and params["y_label"] == Y_LABEL["values"]:
     legend = plot.legend()
 plot.tight_layout()
 ax.grid(which='both', linestyle='--')
