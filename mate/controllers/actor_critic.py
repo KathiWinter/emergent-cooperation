@@ -1,3 +1,5 @@
+import copy
+import random
 from mate.controllers.controller import Controller
 from mate.utils import assertEquals
 from torch.distributions import Categorical
@@ -5,6 +7,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy
+from mate.controllers.memory import ExperienceMemory
 
 def preprocessing_module(nr_input_features, nr_hidden_units):
     return nn.Sequential(
@@ -51,6 +54,14 @@ class ActorCritic(Controller):
         self.nr_update_iterations = 1
         self.actor_nets = []
         self.critic_nets = []
+        self.update_ac = False
+        self.values = [-numpy.inf for _ in range(self.nr_agents)]
+        self.memories_copy = [ExperienceMemory(params, i, self.device) for i in range(self.nr_agents)]
+        self.token_values = [0.25 for _ in range(self.nr_agents)]
+        self.best_token_value = [0.25 for _ in range(self.nr_agents)]
+        self.avg_value = 0
+        self.value1 = [1 for _ in range(self.nr_agents)]
+        self.value2 = [1 for _ in range(self.nr_agents)]
         for _ in range(self.nr_agents):
             self.actor_nets.append(ActorNet(self.input_dim, self.nr_actions, params["nr_hidden_units"], self.learning_rate))
             self.critic_nets.append(CriticNet(self.input_dim, params["nr_hidden_units"], self.learning_rate))
@@ -72,11 +83,45 @@ class ActorCritic(Controller):
         return None
 
     def update_step(self):
-        preprocessed_data = self.preprocess()
+
         for i, memory, actor_net, critic_net in\
             zip(range(self.nr_agents), self.memories, self.actor_nets, self.critic_nets):
-            self.local_update(i, memory, actor_net, critic_net, preprocessed_data)
+            histories, _, _, _, _, _, _, _ = memory.get_training_data()
+            value = self.get_values(i, histories)
+            if sum(value) > self.values[i]:
+                self.values[i] = sum(value)
+                self.best_token_value[i] = self.token_values[i]
+            p = random.uniform(0,1)
+            if p < 0.1:
+                self.best_token_value[i] = self.token_values[i] + self.token_values[i] * random.uniform(-0.1, 0.1)
+        
+        if self.update_ac:
+            gradient = (self.value2[i] - self.value1[i]) / self.value1[i]
+            self.token_values = [numpy.max([0.0, x + random.choice([-0.5, 0.5])]) for x in self.token_values]
+            self.avg_value = numpy.mean(self.token_values)
+            self.value1 = self.token_values
+        else:
+            self.avg_value = numpy.mean(self.best_token_value)
+            self.token_values = [numpy.mean(self.best_token_value) for _ in range(self.nr_agents)]
+            self.value2 = self.best_token_value
+            self.memories_copy = copy.deepcopy(self.memories)
+        
+        for i, memory in enumerate(self.memories):
             memory.clear()
+        
+        
+        
+        print(self.best_token_value)
+        print(self.avg_value)        
+        
+        if self.update_ac:
+            preprocessed_data = self.preprocess()
+            for i, memory, actor_net, critic_net in\
+                zip(range(self.nr_agents), self.memories_copy, self.actor_nets, self.critic_nets):
+                self.local_update(i, memory, actor_net, critic_net, preprocessed_data)
+                memory.clear()
+
+        self.update_ac = not self.update_ac
     
     def policy_loss(self, advantage, probs, action, old_probs):
         m1 = Categorical(probs)

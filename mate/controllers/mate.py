@@ -54,6 +54,12 @@ class MATE(ActorCritic):
         original_rewards = [r for r in rewards]
         self.trust_request_matrix[:] = 0
         self.trust_response_matrix[:] = 0
+        
+        for i in range(self.nr_agents):
+            pass
+        
+        
+        self.token_value = self.avg_value
         # 1. Send trust requests
         defector_id = -1
         if self.defect_mode != NO_DEFECT:
