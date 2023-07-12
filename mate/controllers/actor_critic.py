@@ -101,20 +101,23 @@ class ActorCritic(Controller):
                 self.token_values[i][self.token[i]].append([self.step, gradient])
                 for key in self.token_values[i]:
                     for entry in self.token_values[i][key]:
-                        if entry[0] < self.step-5:
+                        if entry[0] < self.step-10:
                             self.token_values[i][key].remove(entry)
-
+                #print(self.token_values[i])
+                
                 max_sum = -numpy.inf
                 for key in self.token_values[i]:
-                    gradient_sum = sum(entry[1] for entry in self.token_values[i][key])
-                    if gradient_sum > max_sum:
-                        max_sum = gradient_sum
-                        self.best_token[i] = key
-                        self.confidence[i] = 1/(len(self.token_values[i][key])+1)
+                    gradient_sum = [entry[1] for entry in self.token_values[i][key]]
+                    if len(gradient_sum) > 0:
+                        gradient_sum =numpy.max(gradient_sum)
+                        if gradient_sum > max_sum:
+                            max_sum = gradient_sum
+                            self.best_token[i] = key
+                            self.confidence[i] = 1/(len(self.token_values[i][key])+1)
 
                 p = random.uniform(0,1)
                 if p < self.confidence[i]*2:
-                    token = numpy.max([0.0, random.choice([self.best_token[i]*2, self.best_token[i]/2])])
+                    token = numpy.max([0.0, random.choice([self.best_token[i]+0.1, self.best_token[i]-0.1])])
                 else:
                     token = self.best_token[i]
                
