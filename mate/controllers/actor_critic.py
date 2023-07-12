@@ -62,7 +62,7 @@ class ActorCritic(Controller):
         self.last_values = [1 for _ in range(self.nr_agents)]
         self.best_token = [0.25 for _ in range(self.nr_agents)]
         self.update_c = False
-        self.gamma = 0.99
+        self.confidence = [1 for _ in range(self.nr_agents)]
         self.step = 0
         for _ in range(self.nr_agents):
             self.actor_nets.append(ActorNet(self.input_dim, self.nr_actions, params["nr_hidden_units"], self.learning_rate))
@@ -92,35 +92,34 @@ class ActorCritic(Controller):
             histories, _, _, _, _, _, _, _ = memory.get_training_data()
             self.last_values[i] = self.values[i]
             self.values[i] = sum(self.get_values(i, histories)).item()
-            
-            
+             
             if self.update_c:
                 gradient = (self.values[i]-self.last_values[i])/abs(self.last_values[i])
             
                 if self.token[i] not in self.token_values[i]:   
                     self.token_values[i][self.token[i]] = []
                 self.token_values[i][self.token[i]].append([self.step, gradient])
-                for entry in self.token_values[i][self.token[i]]:
-                    if entry[0] < self.step-10:
-                        self.token_values[i][self.token[i]].remove(entry)
+                for key in self.token_values[i]:
+                    for entry in self.token_values[i][key]:
+                        if entry[0] < self.step-5:
+                            self.token_values[i][key].remove(entry)
 
-                    
-                #print(self.token_values[i][token])
-                p = random.uniform(0,1)
-                if p < 0.5:
-                    token = numpy.max([0.0, random.choice([self.best_token[i] - 0.1, self.best_token[i] + 0.1])])
-                else:
-                    token = self.best_token[i]
-                 
                 max_sum = -numpy.inf
                 for key in self.token_values[i]:
-                    if numpy.mean(self.token_values[i][key]) > max_sum:
-                        max_sum = numpy.median(self.token_values[i][key]) 
+                    gradient_sum = sum(entry[1] for entry in self.token_values[i][key])
+                    if gradient_sum > max_sum:
+                        max_sum = gradient_sum
                         self.best_token[i] = key
-                
-                
-                
+                        self.confidence[i] = 1/(len(self.token_values[i][key])+1)
+
+                p = random.uniform(0,1)
+                if p < self.confidence[i]*2:
+                    token = numpy.max([0.0, random.choice([self.best_token[i]*2, self.best_token[i]/2])])
+                else:
+                    token = self.best_token[i]
+               
                 self.token[i] = token
+                
 
                 self.update_critic(i, memory.get_training_data(), critic_net, preprocessed_data)
                 self.update_actor(i, memory.get_training_data(), actor_net, preprocessed_data)
@@ -129,8 +128,7 @@ class ActorCritic(Controller):
                 self.update_critic(i, memory.get_training_data(), critic_net, preprocessed_data)
                 self.update_actor(i, memory.get_training_data(), actor_net, preprocessed_data)
             memory.clear()
-        
-            #print("agent ", i, ":", self.token_values[i])
+
         self.avg_value = [numpy.mean(self.token) for _ in range(self.nr_agents)]
         self.step += 1
         self.update_c = not self.update_c
