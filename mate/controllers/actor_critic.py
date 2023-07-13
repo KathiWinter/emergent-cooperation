@@ -91,9 +91,9 @@ class ActorCritic(Controller):
             zip(range(self.nr_agents), self.memories, self.actor_nets, self.critic_nets):
         
             self.update_actor(i, memory.get_training_data(), actor_net, preprocessed_data)
-                      
-            if self.update_c:     
-                self.update_critic(i, memory.get_training_data(), critic_net, preprocessed_data)   
+            self.update_critic(i, memory.get_training_data(), critic_net, preprocessed_data) 
+            
+            if self.update_c:       
                 
                 histories, _, _, _, _, _, _, _ = memory.get_training_data()    
                 self.values[i] = sum(self.get_values(i, histories)).item()
