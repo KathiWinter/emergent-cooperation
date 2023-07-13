@@ -101,7 +101,7 @@ class ActorCritic(Controller):
                 self.token_values[i][self.token[i]].append([self.step, gradient])
                 for key in self.token_values[i]:
                     for entry in self.token_values[i][key]:
-                        if entry[0] < self.step-10:
+                        if entry[0] < self.step-5:
                             self.token_values[i][key].remove(entry)
                 #print(self.token_values[i])
                 
@@ -117,7 +117,7 @@ class ActorCritic(Controller):
 
                 p = random.uniform(0,1)
                 if p < self.confidence[i]*2:
-                    token = numpy.max([0.0, random.choice([self.best_token[i]+0.1, self.best_token[i]-0.1])])
+                    token = numpy.max([0.0, random.choice([self.best_token[i]+0.25, self.best_token[i]-0.25])])
                 else:
                     token = self.best_token[i]
                
@@ -133,6 +133,9 @@ class ActorCritic(Controller):
             memory.clear()
 
         self.avg_value = [numpy.mean(self.token) for _ in range(self.nr_agents)]
+
+        for i in range(self.nr_agents):
+            self.token[i] = self.avg_value[i]
         self.step += 1
         self.update_c = not self.update_c
         
