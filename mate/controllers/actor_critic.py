@@ -63,7 +63,7 @@ class ActorCritic(Controller):
         self.last_values = [1 for _ in range(self.nr_agents)]
         self.best_token = [0.25 for _ in range(self.nr_agents)]
         self.update_c = False
-        self.confidence = [1 for _ in range(self.nr_agents)]
+        self.last_memories = [ExperienceMemory(params, i, self.device) for i in range(self.nr_agents)]
         self.step = 0
         for _ in range(self.nr_agents):
             self.actor_nets.append(ActorNet(self.input_dim, self.nr_actions, params["nr_hidden_units"], self.learning_rate))
@@ -90,17 +90,18 @@ class ActorCritic(Controller):
         for i, memory, actor_net, critic_net in\
             zip(range(self.nr_agents), self.memories, self.actor_nets, self.critic_nets):
         
-            histories, _, _, _, _, _, _, _ = memory.get_training_data()
-            self.update_critic(i, memory.get_training_data(), critic_net, preprocessed_data)
             self.update_actor(i, memory.get_training_data(), actor_net, preprocessed_data)
-            
-            
-            self.last_values[i] = self.values[i]
-            self.values[i] = sum(self.get_values(i, histories)).item()
-             
-                            
-            if self.update_c:            
+                      
+            if self.update_c:     
+                self.update_critic(i, memory.get_training_data(), critic_net, preprocessed_data)   
+                
+                histories, _, _, _, _, _, _, _ = memory.get_training_data()    
+                self.values[i] = sum(self.get_values(i, histories)).item()
+                last_histories, _, _, _, _, _, _, _ = self.last_memories[i].get_training_data()
+                self.last_values[i] = sum(self.get_values(i, last_histories)).item()
+                
                 gradient = (self.values[i]-self.last_values[i])/abs(self.last_values[i])
+
                 if self.token[i] not in self.token_values[i]:   
                     self.token_values[i][self.token[i]] = []
                 self.token_values[i][self.token[i]].append([self.step, gradient])
@@ -117,40 +118,26 @@ class ActorCritic(Controller):
                         if gradient_sum > max_sum:
                             max_sum = gradient_sum
                             self.best_token[i] = key
-                            self.confidence[i] = 1/(len(self.token_values[i][key])+1)
-                            print(gradient_sum)
                             
-                            
+
                 p = random.uniform(0,1)
-                if p < self.confidence[i] and abs(max_sum) > 0.01:
-                         token = numpy.max([0.0, random.choice([self.best_token[i]+0.25, self.best_token[i]-0.25])])
+                if p < 0.5:
+                    if self.token[i] > self.best_token[i]:
+                        token = numpy.max([0.0, self.best_token[i]-0.25])
+                    elif self.token[i] < self.best_token[i]:
+                        token = numpy.max([0.0, self.best_token[i]+0.25])
+                    else:
+                        token = numpy.max([0.0, random.choice([self.best_token[i]+0.25, self.best_token[i]-0.25])])
                 else:
                     token = self.best_token[i]
                 self.token[i] = token
                 self.avg_value = [numpy.mean(self.token) for _ in range(self.nr_agents)]
             
             else:
-                
-                
-                key_sum = []
-                for key in self.token_values[i]:
-
-                    if len(self.token_values[i][key]) > 0:
-                        key_sum.append(key)
-
-                if len(key_sum) > 0:
-                    self.avg_token[i] = numpy.mean(key_sum)
-            
-            if self.update_c:
-                self.avg_value = [numpy.mean(self.token) for _ in range(self.nr_agents)]
-            else:
-                self.avg_value = [numpy.mean(self.avg_token) for _ in range(self.nr_agents)]    
-            
+                self.last_memories[i] = copy.deepcopy(memory)
             memory.clear()
 
-
-        # for i in range(self.nr_agents):
-        #     self.token[i] = self.avg_value[i]
+        self.avg_value = [numpy.mean(self.token) for _ in range(self.nr_agents)]
             
         self.step += 1
         self.update_c = not self.update_c
