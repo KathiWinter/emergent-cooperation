@@ -90,10 +90,10 @@ class ActorCritic(Controller):
         for i, memory, actor_net, critic_net in\
             zip(range(self.nr_agents), self.memories, self.actor_nets, self.critic_nets):
         
-            self.update_actor(i, memory.get_training_data(), actor_net, preprocessed_data)
-            self.update_critic(i, memory.get_training_data(), critic_net, preprocessed_data) 
-            
+
             if self.update_c:       
+                self.update_critic(i, memory.get_training_data(), critic_net, preprocessed_data) 
+                self.update_actor(i, memory.get_training_data(), actor_net, preprocessed_data)
                 
                 histories, _, _, _, _, _, _, _ = memory.get_training_data()    
                 self.values[i] = sum(self.get_values(i, histories)).item()
@@ -122,12 +122,7 @@ class ActorCritic(Controller):
 
                 p = random.uniform(0,1)
                 if p < 0.5:
-                    if self.token[i] > self.best_token[i]:
-                        token = numpy.max([0.0, self.best_token[i]-0.25])
-                    elif self.token[i] < self.best_token[i]:
-                        token = numpy.max([0.0, self.best_token[i]+0.25])
-                    else:
-                        token = numpy.max([0.0, random.choice([self.best_token[i]+0.25, self.best_token[i]-0.25])])
+                    token = numpy.max([0.0, random.choice([self.best_token[i]+0.25, self.best_token[i]-0.25])])
                 else:
                     token = self.best_token[i]
                 self.token[i] = token
@@ -135,6 +130,7 @@ class ActorCritic(Controller):
             
             else:
                 self.last_memories[i] = copy.deepcopy(memory)
+                self.update_actor(i, memory.get_training_data(), actor_net, preprocessed_data)
             memory.clear()
 
         self.avg_value = [numpy.mean(self.token) for _ in range(self.nr_agents)]
