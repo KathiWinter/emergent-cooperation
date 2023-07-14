@@ -38,7 +38,7 @@ class MATE(ActorCritic):
         self.last_values = [[] for _ in range(self.nr_agents)]
         self.episode_step = 0
         self.consensus_on = get_param_or_default(params, "consensus_on", True)
-        self.max_reward = [0 for _ in range(self.nr_agents)]
+        self.min_reward = [0 for _ in range(self.nr_agents)]
         self.rewards = [[] for _ in range(self.nr_agents)]
         self.episode_return = numpy.zeros(self.nr_agents, dtype=float)
         self.update_rate = [[] for _ in range(self.nr_agents)]
@@ -92,7 +92,11 @@ class MATE(ActorCritic):
                 if r != 0 and not r in self.rewards[i]:
                     self.rewards[i].append(r)
             if len(self.rewards[i]) > 0:
-                self.max_reward[i] = numpy.min(self.rewards[i]) / 2
+                if numpy.max(self.rewards[i]) > 0:
+                    sign = -1
+                else: 
+                    sign = 1
+                self.min_reward[i] = numpy.min(self.rewards[i]) / 2 * sign
 
         if done and self.consensus_on:
             for i in range(self.nr_agents):
@@ -112,7 +116,8 @@ class MATE(ActorCritic):
                         print("value: ", numpy.median(self.epoch_values[i]) , "last value: ",numpy.median(self.last_values[i]) )
                 
                         token_update = value_change 
-                        ur = 0.1 * self.max_reward[i]
+                        ur = 0.1 * self.min_reward[i]
+                    
                         
                         # if value change is too small
                         if abs(token_update) == numpy.inf:
