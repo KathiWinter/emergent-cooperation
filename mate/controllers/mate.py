@@ -38,7 +38,8 @@ class MATE(ActorCritic):
         self.last_values = [[] for _ in range(self.nr_agents)]
         self.episode_step = 0
         self.consensus_on = get_param_or_default(params, "consensus_on", True)
-        self.max_reward = [0 for _ in range(self.nr_agents)]
+        self.mean_reward = [0 for _ in range(self.nr_agents)]
+        self.max_reward = [-numpy.inf for _ in range(self.nr_agents)]
         self.rewards = [[] for _ in range(self.nr_agents)]
         self.episode_return = numpy.zeros(self.nr_agents, dtype=float)
         self.update_rate = [[] for _ in range(self.nr_agents)]
@@ -88,13 +89,17 @@ class MATE(ActorCritic):
             self.token_value = [1 for _ in range(self.nr_agents)] 
        
         for i in range(self.nr_agents):
+ 
             for r in rewards:
                 if r != 0 and not r in self.rewards[i]:
                     self.rewards[i].append(r)
             if len(self.rewards[i]) > 0:
-                self.max_reward[i] = numpy.min(self.rewards[i]) / 2
+                if numpy.max(self.rewards[i]) > self.max_reward[i]:
+                    self.max_reward[i] = numpy.max(self.rewards[i])
+                self.mean_reward[i] = abs(numpy.min(self.rewards[i]))/2
 
         if done and self.consensus_on:
+            self.episode += 1
             for i in range(self.nr_agents):
                 self.epoch_values[i].append(self.values[i])
                 self.values[i] = 0
@@ -112,13 +117,18 @@ class MATE(ActorCritic):
                         print("value: ", numpy.median(self.epoch_values[i]) , "last value: ",numpy.median(self.last_values[i]) )
                 
                         token_update = value_change 
-                        ur = 0.1 * self.max_reward[i]
+                        ur = 0.1 * self.mean_reward[i] 
                         
                         # if value change is too small
                         if abs(token_update) == numpy.inf:
                             token_update = 0.0 
-                            
-                        self.token_value[i] = self.token_value[i] + token_update * ur
+
+                        if self.max_reward[i] > 0:
+                            sign = 1
+                        else:
+                            sign = -1
+                        self.token_value[i] = self.token_value[i] + token_update * ur * sign
+                      
                         
                         # prevent negative token values
                         self.token_value[i] = numpy.maximum(0.0, self.token_value[i])
@@ -128,11 +138,8 @@ class MATE(ActorCritic):
                     self.last_values[i] = self.epoch_values[i]
                     self.epoch_values[i] = []
         
-                # mean_token = numpy.mean(self.token_value)
-            
-                # for i in range(len(self.token_value)):
-                #     self.token_value[i] = mean_token
-            self.episode_step = 0    
+            self.episode_step = 0   
+            self.rewards = [[] for _ in range(self.nr_agents)] 
             
         # 1. Send trust requests
         defector_id = -1
@@ -195,7 +202,7 @@ class MATE(ActorCritic):
                     if len(filtered_trust_responses) > 0:
                         transition["rewards"][i] += min(filtered_trust_responses)
         if done:
-            self.episode += 1
+            
 
             self.last_rewards_observed = [[] for _ in range(self.nr_agents)]
             self.episode_return = numpy.zeros(self.nr_agents, dtype=float)
