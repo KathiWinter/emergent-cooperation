@@ -67,47 +67,9 @@ class MATE(ActorCritic):
     
     def prepare_transition(self, joint_histories, joint_action, rewards, next_joint_histories, done, info):
         transition = super(MATE, self).prepare_transition(joint_histories, joint_action, rewards, next_joint_histories, done, info)
-        if self.token_mode == FIXED_TOKEN:
-            token_value = numpy.ones(self.nr_agents)
-        if self.token_mode == RANDOM_TOKEN:
-            #rand_value = random.choice([0.25, 0.5, 1.0, 2.0, 4.0])
-            token_value = [random.choice([0.25, 0.5, 1.0, 2.0, 4.0]), random.choice([0.25, 0.5, 1.0, 2.0, 4.0])]
-            if done:
-                transition["token_value"] = token_value
-        if self.token_mode == UCB:
-            token_value = [0 for x in range(self.nr_agents)]
-            for i in range(self.nr_agents):
-                self.episode_return[i] += rewards[i]
-                token_value[i] = self.last_token_value[i]
-            if done:
-                self.episode += 1
-                for i in range(self.nr_agents):
-                    max_upper_bound = 0
-                    if(str(token_value[i]) not in self.tokens_dict[i]):
-                        self.tokens_dict[i][str(token_value[i])] = {'rewards': []} 
-                    self.tokens_dict[i][str(token_value[i])]['rewards'].append(self.episode_return[i])
-                    if(len(self.tokens_dict[i][str(token_value[i])]['rewards']) > 50):
-                        self.tokens_dict[i][str(token_value[i])]['rewards'].pop(0) 
-                
-                    for token, stats in self.tokens_dict[i].items():
-                        if(len(stats['rewards']) > 0):
-                            mean_reward = sum(stats['rewards']) / len(stats['rewards'])
-                            di = numpy.sqrt((3/2 * numpy.log(self.episode + 1)) / len(stats['rewards']))
-                            upper_bound = mean_reward + di
-                        else:
-                            upper_bound = 1e400
-                        if(upper_bound > max_upper_bound):
-                            max_upper_bound = upper_bound
-                            self.best_value[i] = float(token)
-                    p = random.uniform(0, 1)  
-                    if p < self.epsilon:
-                        token_value[i] = random.choice([0.25, 0.5, 1.0, 2.0, 4.0])
-                    else:                 
-                        token_value[i] = self.best_value[i]       
-                    self.episode_return[i] = 0
-                self.last_token_value = token_value
-                transition["token_value"] = token_value
-                
+        
+        token_value = [self.token_value0, self.token_value1]   
+        
         original_rewards = [r for r in rewards]
         self.trust_request_matrix[:] = 0
         self.trust_response_matrix[:] = 0
@@ -160,5 +122,6 @@ class MATE(ActorCritic):
                         self.count_accept[i] += 1
         
         if done:
+            transition["token_value"] = token_value
             self.last_rewards_observed = [[] for _ in range(self.nr_agents)]
         return transition
