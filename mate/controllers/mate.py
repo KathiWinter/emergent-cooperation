@@ -68,7 +68,7 @@ class MATE(ActorCritic):
     def prepare_transition(self, joint_histories, joint_action, rewards, next_joint_histories, done, info):
         transition = super(MATE, self).prepare_transition(joint_histories, joint_action, rewards, next_joint_histories, done, info)
         
-        token_value = [self.token_value0, self.token_value1]   
+        token_value = [self.token_value for _ in range(self.nr_agents)]   
         
         original_rewards = [r for r in rewards]
         self.trust_request_matrix[:] = 0
@@ -122,6 +122,7 @@ class MATE(ActorCritic):
                         self.count_accept[i] += 1
         
         if done:
+            print(token_value)
             transition["token_value"] = token_value
             self.last_rewards_observed = [[] for _ in range(self.nr_agents)]
         return transition
