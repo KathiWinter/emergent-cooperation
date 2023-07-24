@@ -110,10 +110,6 @@ class MATE(ActorCritic):
             
                 if self.episode % 10 == 0:
                     # derive token value from value function
-                    self.token_send_matrix[:] = 0
-                    self.token_response_matrix[:] = 0
-                    self.token_shares[i] = []
-                    self.share_list = [[] for _ in range(self.nr_agents)]
                     if self.episode > 9:
                         if len(self.last_values[i]) > 0:
                             value_gradient = float(numpy.median(self.epoch_values[i]) - numpy.median(self.last_values[i])) / abs(numpy.median(self.last_values[i]))
@@ -153,27 +149,34 @@ class MATE(ActorCritic):
         if self.defect_mode != NO_DEFECT:
             defector_id = numpy.random.randint(0, self.nr_agents)
         request_receive_enabled = [self.sample_no_comm_failure() for _ in range(self.nr_agents)]
+        if self.consensus_on and self.new_value[i]:
+            self.token_send_matrix[:] = 0
+            self.token_response_matrix[:] = 0
+            self.token_shares[i] = []
+            self.share_list = [[] for _ in range(self.nr_agents)]
         for i, reward, history, next_history in zip(range(self.nr_agents), original_rewards, joint_histories, next_joint_histories):
             self.values[i] += self.get_values(i, torch.tensor(numpy.array([history]), dtype=torch.float, device=self.device))[0].item()
             neighborhood = info["neighbor_agents"][i]
             if done and self.consensus_on and self.new_value[i]:
                 self.token_shares[i] = self.generate_token_shares(len(neighborhood), self.token_value[i])
                 self.token_send_matrix[i][i] = self.token_shares[i][0]
+                #print("send matrix", self.token_send_matrix)
             requests_enabled = i != defector_id or self.defect_mode not in [DEFECT_ALL, DEFECT_SEND]
             requests_enabled = requests_enabled and self.sample_no_comm_failure()
             next_index = 1
             for j in neighborhood:
                 if requests_enabled:
+                    assert i != j
                     if done and self.consensus_on and self.new_value[i]: 
                         self.token_send_matrix[j][i] = self.token_shares[i][next_index]
                         next_index += 1
-                    assert i != j
                     if self.can_rely_on(i, reward, history, next_history): # Analyze the "winners" of that step
                         self.trust_request_matrix[j][i] += self.token_value[i]
                         transition["request_messages_sent"] += 1
-
+            
         # 2. Send trust responses
         for i, history, next_history in zip(range(self.nr_agents), joint_histories, next_joint_histories):
+            #print("send matrix", self.token_send_matrix)
             if done and self.consensus_on and self.new_value[i]:
                 summed_token_shares = sum(self.token_send_matrix[i])                                         
                 share_id = self.generate_id()
