@@ -112,7 +112,8 @@ class MATE(ActorCritic):
                         if len(self.last_values[i]) > 0:
                             partial_gradients =[]
                             for s in range(len(self.epoch_values[i])):
-                                partial_gradients.append(((self.epoch_values[i][s]) - (self.last_values[i][s])) / abs((self.last_values[i][s])))
+                                for s_ in range(len(self.last_values[i])):
+                                    partial_gradients.append(((self.epoch_values[i][s]) - (self.last_values[i][s_])) / abs((self.last_values[i][s_])))
                             value_gradient = numpy.median(partial_gradients)
                         else:
                             value_gradient = 0
