@@ -100,51 +100,7 @@ class MATE(ActorCritic):
                     self.max_reward[i] = numpy.max(self.rewards[i])
                 self.mean_reward[i] = abs(numpy.min(self.rewards[i]))/2
 
-        if done and self.consensus_on:
-            self.episode += 1
-            for i in range(self.nr_agents):
-                self.epoch_values[i].append(self.values[i])
-                self.values[i] = 0
-            
-                if self.episode % 10 == 0:
-                    # derive token value from value function
-                    if self.episode > 9:
-                        if len(self.last_values[i]) > 0:
-                            partial_gradients =[]
-                            for s in range(len(self.epoch_values[i])):
-                                for s_ in range(len(self.last_values[i])):
-                                    partial_gradients.append(((self.epoch_values[i][s]) - (self.last_values[i][s_])) / abs((self.last_values[i][s_])))
-                            value_gradient = numpy.median(partial_gradients)
-                        else:
-                            value_gradient = 0
-                        transition["value_gradients"][i] = value_gradient
-                        transition["values"][i] = numpy.median(self.epoch_values[i])
-                        print("value: ", numpy.median(self.epoch_values[i]) , "last value: ",numpy.median(self.last_values[i]) )
 
-                        update_rate = 0.1 * self.mean_reward[i] 
-                        
-                        # if value change is too small
-                        if abs(value_gradient) == numpy.inf:
-                            value_gradient = 0.0 
-
-                        if self.max_reward[i] > 0:
-                            sign = 1
-                        else:
-                            sign = -1
-                
-                        self.token_value[i] = self.token_value[i] + value_gradient * update_rate * sign
-                      
-                        
-                        # prevent negative token values
-                        self.token_value[i] = numpy.maximum(0.0, self.token_value[i])
-                        self.new_value[i] = True
-                    
-                    #reset episode parameters
-                    self.last_values[i] = self.epoch_values[i]
-                    self.epoch_values[i] = []
-
-            self.episode_step = 0   
-            self.rewards = [[] for _ in range(self.nr_agents)] 
             
         # 1. Send trust requests
         defector_id = -1
@@ -221,7 +177,50 @@ class MATE(ActorCritic):
                     if len(filtered_trust_responses) > 0:
                         transition["rewards"][i] += min(filtered_trust_responses)
         if done:
+            self.episode += 1
+            for i in range(self.nr_agents):
+                self.epoch_values[i].append(self.values[i])
+                self.values[i] = 0
             
+                if self.episode % 10 == 1:
+                    # derive token value from value function
+                    if self.episode > 9:
+                        if len(self.last_values[i]) > 0:
+                            value_gradient = (numpy.median(self.epoch_values[i])-numpy.median(self.last_values[i]))/abs(numpy.median(self.last_values[i]))
+                        else:
+                            value_gradient = 0
+                        transition["value_gradients"][i] = value_gradient
+                        transition["values"][i] = numpy.median(self.epoch_values[i])
+                        print("value: ", numpy.median(self.epoch_values[i]) , "last value: ",numpy.median(self.last_values[i]) )
+
+                        update_rate = 0.1 * self.mean_reward[i] 
+                        
+                        # if value change is too small
+                        if abs(value_gradient) == numpy.inf:
+                            value_gradient = 0.0 
+
+                        if self.max_reward[i] > 0:
+                            sign = 1
+                        else:
+                            sign = -1
+                
+                        self.token_value[i] = self.token_value[i] + value_gradient * update_rate * sign
+                      
+                        
+                        # prevent negative token values
+                        self.token_value[i] = numpy.maximum(0.0, self.token_value[i])
+                        self.new_value[i] = True
+                    
+                    #reset episode parameters
+                    self.last_values[i] = self.epoch_values[i]
+                    self.epoch_values[i] = []
+            
+            mean_token = numpy.mean(self.token_value)
+            for i in range(self.nr_agents):
+                self.token_value[i] = mean_token
+
+            self.episode_step = 0   
+            self.rewards = [[] for _ in range(self.nr_agents)] 
 
             self.last_rewards_observed = [[] for _ in range(self.nr_agents)]
             self.episode_return = numpy.zeros(self.nr_agents, dtype=float)
