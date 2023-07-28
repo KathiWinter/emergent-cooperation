@@ -27,7 +27,7 @@ class MATE(ActorCritic):
         super(MATE, self).__init__(params)
         self.last_rewards_observed = [[] for _ in range(self.nr_agents)]
         self.mate_mode = get_param_or_default(params, "mate_mode", STATIC_MODE)
-        self.token_value = get_param_or_default(params, "token_value", [0 for _ in range(self.nr_agents)])#numpy.zeros(self.nr_agents, dtype=float))
+        self.token_value = get_param_or_default(params, "token_value", [0.1 for _ in range(self.nr_agents)])#numpy.zeros(self.nr_agents, dtype=float))
         self.trust_request_matrix = numpy.zeros((self.nr_agents, self.nr_agents), dtype=float)
         self.trust_response_matrix = numpy.zeros((self.nr_agents, self.nr_agents), dtype=float)
         self.defect_mode = get_param_or_default(params, "defect_mode", NO_DEFECT)
@@ -184,27 +184,22 @@ class MATE(ActorCritic):
             
                 if self.episode % 10 == 0:
                     # derive token value from value function
-                    if self.episode > 10:
+                    if self.episode > 20:
                         if len(self.last_values[i]) > 0:
-                            value_gradient = (numpy.median(self.epoch_values[i])-numpy.median(self.last_values[i]))/abs(numpy.median(self.last_values[i]))
+                            value_gradient = (numpy.mean(self.epoch_values[i])-numpy.mean(self.last_values[i]))/(numpy.mean(self.last_values[i]))
                         else:
                             value_gradient = 0
                         transition["value_gradients"][i] = value_gradient
                         transition["values"][i] = numpy.median(self.epoch_values[i])
                         print("value: ", numpy.median(self.epoch_values[i]) , "last value: ",numpy.median(self.last_values[i]) )
 
-                        update_rate = 0.1 * self.mean_reward[i] 
+                        update_rate = 0.15 * self.mean_reward[i] 
                         
                         # if value change is too small
                         if abs(value_gradient) == numpy.inf:
                             value_gradient = 0.0 
-
-                        if self.max_reward[i] > 0:
-                            sign = 1
-                        else:
-                            sign = -1
                 
-                        self.token_value[i] = self.token_value[i] + value_gradient * update_rate * sign
+                        self.token_value[i] = self.token_value[i] + value_gradient * update_rate 
                       
                         
                         # prevent negative token values
