@@ -182,9 +182,9 @@ class MATE(ActorCritic):
                 self.epoch_values[i].append(self.values[i])
                 self.values[i] = 0
             
-                if self.episode % 10 == 1:
+                if self.episode % 10 == 0:
                     # derive token value from value function
-                    if self.episode > 11:
+                    if self.episode > 10:
                         if len(self.last_values[i]) > 0:
                             value_gradient = (numpy.median(self.epoch_values[i])-numpy.median(self.last_values[i]))/abs(numpy.median(self.last_values[i]))
                         else:
