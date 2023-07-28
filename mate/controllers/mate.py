@@ -80,7 +80,7 @@ class MATE(ActorCritic):
                 transition["token_value"] = token_value
         if self.token_mode == RANDOM_TOKEN:
             #rand_value = random.choice([0.25, 0.5, 1.0, 2.0, 4.0])
-            token_value = [random.choice([0.25, 0.5, 1.0, 2.0, 4.0]), random.choice([0.25, 0.5, 1.0, 2.0, 4.0])]
+            token_value = [random.choice([0.25, 0.5, 1.0, 2.0, 4.0]) for _ in range(self.nr_agents)]
             if done:
                 transition["token_value"] = token_value
         if self.token_mode == EARNING: 
@@ -197,7 +197,7 @@ class MATE(ActorCritic):
                     assert i != j
                     if self.trust_request_matrix[i][j] > 0:
                         if self.trust_request_matrix[j][i] > 0:
-                            self.trust_response_matrix[j][i] = accept_trust * token_value[j]
+                            self.trust_response_matrix[j][i] = accept_trust * token_value[i]
                         else:
                             if accept_trust > 0:
                                 self.trust_response_matrix[j][i] = accept_trust * random.choice([0.25, 0.5, 1.0, 2.0, 4.0])
