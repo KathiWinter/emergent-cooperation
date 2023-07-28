@@ -184,7 +184,7 @@ class MATE(ActorCritic):
             
                 if self.episode % 10 == 1:
                     # derive token value from value function
-                    if self.episode > 9:
+                    if self.episode > 11:
                         if len(self.last_values[i]) > 0:
                             value_gradient = (numpy.median(self.epoch_values[i])-numpy.median(self.last_values[i]))/abs(numpy.median(self.last_values[i]))
                         else:
@@ -208,7 +208,7 @@ class MATE(ActorCritic):
                       
                         
                         # prevent negative token values
-                        self.token_value[i] = numpy.maximum(0.0, self.token_value[i])
+                        self.token_value[i] = numpy.maximum(0.1, self.token_value[i])
                         self.new_value[i] = True
                     
                     #reset episode parameters
