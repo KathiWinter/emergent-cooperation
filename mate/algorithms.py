@@ -91,6 +91,10 @@ def make(params):
         params["mate_mode"] = "td_error"
         params["comm_failure_prob"] = 0.8
         return mate.MATE(params)
+    if algorithm_name == "MATE-TD-T1":
+        params["mate_mode"] = "td_error"
+        params["token_value"] = 1
+        return mate.MATE(params)
     if algorithm_name == "MATE-TD-T0.5":
         params["mate_mode"] = "td_error"
         params["token_value"] = 0.5
