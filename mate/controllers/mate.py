@@ -31,6 +31,7 @@ class MATE(ActorCritic):
         self.trust_request_matrix = numpy.zeros((self.nr_agents, self.nr_agents), dtype=float)
         self.trust_response_matrix = numpy.zeros((self.nr_agents, self.nr_agents), dtype=float)
         self.defect_mode = get_param_or_default(params, "defect_mode", NO_DEFECT)
+        self.baseline_mode = get_param_or_default(params, "baseline_mode", False)
         self.token_send_matrix = numpy.zeros((self.nr_agents, self.nr_agents), dtype=float)
         self.token_response_matrix = numpy.zeros((self.nr_agents, self.nr_agents), dtype=float)
         self.token_shares = [[] for _ in range(self.nr_agents)]
@@ -91,17 +92,10 @@ class MATE(ActorCritic):
         
        
         for i in range(self.nr_agents):
- 
             for r in rewards:
                 if r != 0 and not r in self.rewards[i]:
                     self.rewards[i].append(r)
-            if len(self.rewards[i]) > 0:
-                if numpy.max(self.rewards[i]) > self.max_reward[i]:
-                    self.max_reward[i] = numpy.max(self.rewards[i])
-                self.mean_reward[i] = abs(numpy.min(self.rewards[i]))/2
 
-
-            
         # 1. Send trust requests
         defector_id = -1
         if self.defect_mode != NO_DEFECT:
@@ -185,12 +179,15 @@ class MATE(ActorCritic):
                 if self.episode % 10 == 0:
                     # derive token value from value function
                     if self.episode > 20:
+                        if len(self.rewards[i]) > 0:
+                            self.mean_reward[i] = abs(numpy.min(self.rewards[i]))/2
+                
                         if len(self.last_values[i]) > 0:
                             value_gradient = (numpy.mean(self.epoch_values[i])-numpy.mean(self.last_values[i]))/(numpy.mean(self.last_values[i]))
                         else:
                             value_gradient = 0
-                        transition["value_gradients"][i] = value_gradient
-                        transition["values"][i] = numpy.median(self.epoch_values[i])
+                        transition["value_gradients"][i].append(value_gradient)
+                        transition["values"][i].append(numpy.median(self.epoch_values[i]))
                         print("value: ", numpy.median(self.epoch_values[i]) , "last value: ",numpy.median(self.last_values[i]) )
 
                         update_rate = 0.15 * self.mean_reward[i] 
@@ -200,8 +197,7 @@ class MATE(ActorCritic):
                             value_gradient = 0.0 
                 
                         self.token_value[i] = self.token_value[i] + value_gradient * update_rate 
-                      
-                        
+    
                         # prevent negative token values
                         self.token_value[i] = numpy.maximum(0.1, self.token_value[i])
                         self.new_value[i] = True
@@ -209,10 +205,10 @@ class MATE(ActorCritic):
                     #reset episode parameters
                     self.last_values[i] = self.epoch_values[i]
                     self.epoch_values[i] = []
-            
-            mean_token = numpy.mean(self.token_value)
-            for i in range(self.nr_agents):
-                self.token_value[i] = mean_token
+
+            if self.baseline_mode:
+                for i in range(self.nr_agents):
+                    self.token_value[i] = 1
 
             self.episode_step = 0   
             self.rewards = [[] for _ in range(self.nr_agents)] 

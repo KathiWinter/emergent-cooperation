@@ -5,5 +5,3 @@
 python train.py CoinGame-2 MATE-TD-NC
 python train.py CoinGame-2 MATE-TD-NC
 python train.py CoinGame-2 MATE-TD-NC
-python train.py CoinGame-2 MATE-TD-NC
-python train.py CoinGame-2 MATE-TD-NC

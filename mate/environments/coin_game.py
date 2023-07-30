@@ -1,6 +1,7 @@
 from mate.environments.environment import Environment
 import numpy
 import random
+import math
 
 MOVE_NORTH = 0
 MOVE_SOUTH = 1
@@ -8,6 +9,11 @@ MOVE_WEST = 2
 MOVE_EAST = 3
 
 COIN_GAME_ACTIONS = [MOVE_NORTH, MOVE_SOUTH, MOVE_WEST, MOVE_EAST]
+
+NORMAL = 0
+PENALTY = 0
+LEVEL_UP = 1
+VERSION = [NORMAL, PENALTY, LEVEL_UP]
 
 class MovableAgent:
 
@@ -68,8 +74,18 @@ class CoinGameEnvironment(Environment):
         self.agents = [MovableAgent(i, self.width, self.height, self.view_range) for i in range(self.nr_agents)]
         self.positions = [(x, y) for x in range(self.width) for y in range(self.height)]
         self.coin = Coin(self.nr_agents)
+        self.episode_step = 0
+        self.episode = 0
+        self.upgrade = 0.1
+        self.penalty = [1 for _ in range(self.nr_agents)]
+        self.coin_count = 0
+        self.level = 1
+    
+    def generate_drift(self, step, center, amplitude, frequency):
+        return center + amplitude * math.sin(2 * math.pi * frequency * step)
 
     def perform_step(self, joint_action):
+        self.episode_step += 1
         rewards, infos = super(CoinGameEnvironment, self).perform_step(joint_action)
         assert not self.is_done(), "Episode terminated at time step {}. Please, reset before calling 'step'."\
             .format(self.time_step)
@@ -78,18 +94,33 @@ class CoinGameEnvironment(Environment):
         random.shuffle(agent_actions)
         for agent, action in agent_actions:
             agent.move(action)
+            self.penalty[agent.agent_id] += 1
             if agent.position == self.coin.position:
                 self.domain_counts[1] += 1
                 coin_collected = True
+                self.coin_count += 1
+                if self.coin_count == 3:
+                    self.coin_count = 0
+                    self.level += 1 
                 rewards[agent.agent_id] += 1
                 if agent.agent_id != self.coin.agent_id:
-                    rewards[self.coin.agent_id] -= 2
-                else:
+                    if VERSION[0] == 1: #NORMAL
+                        rewards[self.coin.agent_id] -= 0.2
+                    elif VERSION[1] == 1: #PENALTY
+                        rewards[self.coin.agent_id] -= self.penalty[self.coin.agent_id]
+                    elif VERSION[2] == 1: #LEVEL UP
+                        rewards[self.coin.agent_id] -= self.level
                     self.domain_counts[2] += 1
+                else:
+                    self.penalty[agent.agent_id] = 1
         if coin_collected:
             old_position = self.coin.position
             new_position = random.choice([pos for pos in self.positions if pos != old_position])
             self.coin.reset(new_position)
+        if self.episode_step == 150:
+            self.level = 1
+            self.episode += 1
+            self.episode_step = 0            
         return rewards, infos
 
     def get_metric_indices(self, metric):
