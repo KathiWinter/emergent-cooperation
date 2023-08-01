@@ -11,8 +11,8 @@ MOVE_EAST = 3
 COIN_GAME_ACTIONS = [MOVE_NORTH, MOVE_SOUTH, MOVE_WEST, MOVE_EAST]
 
 NORMAL = 0
-PENALTY = 0
-LEVEL_UP = 1
+PENALTY = 1
+LEVEL_UP = 0
 VERSION = [NORMAL, PENALTY, LEVEL_UP]
 
 class MovableAgent:
@@ -23,7 +23,6 @@ class MovableAgent:
         self.width = width
         self.height = height
         self.view_range = view_range
-
     def move(self, action):
         x, y = self.position
         if action == MOVE_NORTH and y + 1 < self.height:
@@ -34,10 +33,8 @@ class MovableAgent:
             self.position = (x + 1, y)
         if action == MOVE_WEST and x - 1 >= 0:
             self.position = (x - 1, y)
-
     def reset(self, position):
         self.position = position
-
     def visible_positions(self):
         x0, y0 = self.position
         x_center = int(self.view_range/2)
@@ -45,25 +42,19 @@ class MovableAgent:
         positions = [(x,y) for x in range(-x_center+x0, x_center+1+x0)\
             for y in range(-y_center+y0, y_center+1+y0)]
         return positions
-
     def relative_position_to(self, other_position):
         dx = other_position[0] - self.position[0]
         dy = other_position[1] - self.position[1]
         return dx, dy
-
 class Coin:
-
     def __init__(self, nr_agents):
         self.agent_ids = list(range(nr_agents))
         self.agent_id = None # Indicates color of coin
         self.position = None
-
     def reset(self, position):
         self.position = position
         self.agent_id = random.choice(self.agent_ids)
-
 class CoinGameEnvironment(Environment):
-
     def __init__(self, params):
         params["domain_value_labels"] = ["time_steps", "coins_collected", "own_coins_collected", "coin_1_generated"]
         super(CoinGameEnvironment, self).__init__(params)
@@ -80,7 +71,7 @@ class CoinGameEnvironment(Environment):
         self.penalty = [1 for _ in range(self.nr_agents)]
         self.coin_count = 0
         self.level = 1
-    
+
     def generate_drift(self, step, center, amplitude, frequency):
         return center + amplitude * math.sin(2 * math.pi * frequency * step)
 
@@ -101,16 +92,16 @@ class CoinGameEnvironment(Environment):
                 self.coin_count += 1
                 if self.coin_count == 3:
                     self.coin_count = 0
-                    self.level += 1 
+                    self.level += 2
                 rewards[agent.agent_id] += 1
                 if agent.agent_id != self.coin.agent_id:
                     if VERSION[0] == 1: #NORMAL
-                        rewards[self.coin.agent_id] -= 0.2
+                        rewards[self.coin.agent_id] -= 2
                     elif VERSION[1] == 1: #PENALTY
-                        rewards[self.coin.agent_id] -= self.penalty[self.coin.agent_id]
+                        rewards[self.coin.agent_id] -= self.penalty[agent.agent_id]
                     elif VERSION[2] == 1: #LEVEL UP
                         rewards[self.coin.agent_id] -= self.level
-                    self.domain_counts[2] += 1
+                    self.domain_counts[2] += 1    
                 else:
                     self.penalty[agent.agent_id] = 1
         if coin_collected:
@@ -130,7 +121,6 @@ class CoinGameEnvironment(Environment):
     
     def domain_value_debugging_indices(self):
         return self.get_index("own_coins_collected"), self.get_index("coins_collected")
-
     def local_observation(self, agent_id):
         observation = numpy.zeros(self.observation_shape)
         focus_agent = self.agents[agent_id]
@@ -146,14 +136,12 @@ class CoinGameEnvironment(Environment):
         x, y = self.coin.position
         observation[index][x][y] = 1
         return observation.reshape(-1)
-
     def reset(self):
         positions = random.sample(self.positions, k=(self.nr_agents+1))
         for i, agent in enumerate(self.agents):
             agent.reset(positions[i])
         self.coin.reset(positions[-1])
         return super(CoinGameEnvironment, self).reset()
-
 def make(params):
     domain_name = params["domain_name"]
     params["gamma"] = 0.95

@@ -191,7 +191,7 @@ class MATE(ActorCritic):
                         transition["values"][i].append(numpy.mean(self.epoch_values[i]))
                         print("value: ", numpy.mean(self.epoch_values[i]) , "last value: ",numpy.mean(self.last_values[i]))
 
-                        update_rate = 0.2 * self.mean_reward[i] 
+                        update_rate = 0.15 * self.mean_reward[i] 
                         
                         # if value change is too small
                         if abs(value_gradient) == numpy.inf:
