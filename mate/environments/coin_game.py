@@ -10,8 +10,8 @@ MOVE_EAST = 3
 
 COIN_GAME_ACTIONS = [MOVE_NORTH, MOVE_SOUTH, MOVE_WEST, MOVE_EAST]
 
-NORMAL = 0
-PENALTY = 1
+NORMAL = 1
+PENALTY = 0
 LEVEL_UP = 0
 VERSION = [NORMAL, PENALTY, LEVEL_UP]
 
@@ -157,5 +157,13 @@ def make(params):
         params["nr_agents"] = 4
         params["width"] = 5
         params["height"] = 5
+    if domain_name == "CoinGame-6":
+        params["nr_agents"] = 6
+        params["width"] = 7
+        params["height"] = 7
+    if domain_name == "CoinGame-8":
+        params["nr_agents"] = 8
+        params["width"] = 9
+        params["height"] = 9   
     params["observation_dim"] = int(params["width"]*params["height"]*4)
     return CoinGameEnvironment(params)
