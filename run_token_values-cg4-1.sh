@@ -1,7 +1,7 @@
 #!/bin/sh
 
-python train.py CoinGame-4 MATE-TD-T1
-python train.py CoinGame-4 MATE-TD-T1
-python train.py CoinGame-4 MATE-TD-T1
-python train.py CoinGame-4 MATE-TD-T1
-python train.py CoinGame-4 MATE-TD-T1
+python train.py Matrix-IPD MATE-TD-T1
+python train.py Matrix-IPD MATE-TD-T1
+python train.py Matrix-IPD MATE-TD-T1
+python train.py Matrix-IPD MATE-TD-T1
+python train.py Matrix-IPD MATE-TD-T1
