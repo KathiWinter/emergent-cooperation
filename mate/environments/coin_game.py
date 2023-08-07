@@ -159,8 +159,8 @@ def make(params):
         params["height"] = 5
     if domain_name == "CoinGame-6":
         params["nr_agents"] = 6
-        params["width"] = 6
-        params["height"] = 6
+        params["width"] = 7
+        params["height"] = 7
     if domain_name == "CoinGame-8":
         params["nr_agents"] = 8
         params["width"] = 9
