@@ -184,13 +184,13 @@ class MATE(ActorCritic):
                             self.mean_reward[i] = abs(numpy.max(self.rewards[i]))
                 
                         if len(self.last_values[i]) > 0:
-                            value_gradient = (numpy.mean(self.epoch_values[i])-numpy.mean(self.last_values[i]))/(numpy.mean(self.last_values[i]))
+                            value_gradient = (numpy.mean(self.epoch_values[i])-numpy.mean(self.last_values[i]))/abs(numpy.mean(self.last_values[i]))
                         else:
                             value_gradient = 0
                         #transition["value_gradients"][i].append(value_gradient)
                         #print("value: ", numpy.mean(self.epoch_values[i]) , "last value: ",numpy.mean(self.last_values[i]))
 
-                        update_rate = 0.15 * self.mean_reward[i] 
+                        update_rate = 0.1 * self.mean_reward[i] 
                         
                         # if value change is too small
                         if abs(value_gradient) == numpy.inf:
@@ -218,5 +218,4 @@ class MATE(ActorCritic):
             print(self.token_value)
             for i in range(self.nr_agents):
                 transition["token_values"][i].append(self.token_value[i])
-            print(transition["values"])
         return transition
