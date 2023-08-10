@@ -111,6 +111,22 @@ def make(params):
         params["mate_mode"] = "td_error"
         params["token_value"] = 3
         return mate.MATE(params)
+    if algorithm_name == "MATE-TD-T1.2":
+        params["mate_mode"] = "td_error"
+        params["token_value"] = 1.2
+        return mate.MATE(params)
+    if algorithm_name == "MATE-TD-T1.25":
+        params["mate_mode"] = "td_error"
+        params["token_value"] = 1.25
+        return mate.MATE(params)
+    if algorithm_name == "MATE-TD-T1.3":
+        params["mate_mode"] = "td_error"
+        params["token_value"] = 1.3
+        return mate.MATE(params)
+    if algorithm_name == "MATE-TD-T1.4":
+        params["mate_mode"] = "td_error"
+        params["token_value"] = 1.4
+        return mate.MATE(params)
     if algorithm_name == "MATE-TD-T1.5":
         params["mate_mode"] = "td_error"
         params["token_value"] = 1.5
