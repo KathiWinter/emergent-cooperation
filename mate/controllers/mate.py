@@ -184,7 +184,7 @@ class MATE(ActorCritic):
                             self.mean_reward[i] = abs(numpy.max(self.rewards[i]))
                 
                         if len(self.last_values[i]) > 0:
-                            value_gradient = (numpy.mean(self.epoch_values[i])-numpy.mean(self.last_values[i]))/abs(numpy.mean(self.last_values[i]))
+                            value_gradient = (numpy.mean(self.epoch_values[i])-numpy.mean(self.last_values[i]))/(numpy.mean(self.last_values[i]))
                         else:
                             value_gradient = 0
                         #transition["value_gradients"][i].append(value_gradient)
