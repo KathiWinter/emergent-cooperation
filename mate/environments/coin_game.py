@@ -63,6 +63,8 @@ class CoinGameEnvironment(Environment):
         super(CoinGameEnvironment, self).__init__(params)
         self.width = params["width"]
         self.height = params["height"]
+        self.pos_rew = params["pos_rew"]
+        self.penalty = params["penalty"]
         self.view_range = params["view_range"]
         self.observation_shape = (4, self.width, self.height)
         self.agents = [MovableAgent(i, self.width, self.height, self.view_range) for i in range(self.nr_agents)]
@@ -81,9 +83,9 @@ class CoinGameEnvironment(Environment):
             if agent.position == self.coin.position:
                 self.domain_counts[1] += 1
                 coin_collected = True
-                rewards[agent.agent_id] += 1
+                rewards[agent.agent_id] += self.pos_rew
                 if agent.agent_id != self.coin.agent_id:
-                    rewards[self.coin.agent_id] -= 2
+                    rewards[self.coin.agent_id] -= self.penalty
                 else:
                     self.domain_counts[2] += 1
         if coin_collected:
@@ -134,6 +136,20 @@ def make(params):
         params["nr_agents"] = 2
         params["width"] = 3
         params["height"] = 3
+        params["pos_rew"] = 1
+        params["penalty"] = 2
+    if domain_name == "CoinGame-2-scaled":
+        params["nr_agents"] = 2
+        params["width"] = 3
+        params["height"] = 3
+        params["pos_rew"] = 0.1
+        params["penalty"] = 0.2
+    if domain_name == "CoinGame-2-structure":
+        params["nr_agents"] = 2
+        params["width"] = 3
+        params["height"] = 3
+        params["pos_rew"] = 1
+        params["penalty"] = 10
     if domain_name == "CoinGame-4":
         params["nr_agents"] = 4
         params["width"] = 5
