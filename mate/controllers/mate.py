@@ -179,21 +179,18 @@ class MATE(ActorCritic):
             
                 if self.episode % 10 == 1:
                     # derive token value from value function
-                    if self.episode > 20:
+                    if self.episode > 10:
                         if len(self.rewards[i]) > 0:
-                            self.mean_reward[i] = abs(numpy.max(self.rewards[i]))
+                            self.mean_reward[i] = (numpy.max(self.rewards[i]))
                 
                         if len(self.last_values[i]) > 0:
-                            if numpy.sign(numpy.median(self.epoch_values[i])) != numpy.sign(numpy.median(self.last_values[i])):
-                                value_gradient = -abs(numpy.median(self.last_values[i])) + numpy.median(self.epoch_values[i])
-                            else:
-                                value_gradient = (numpy.median(self.epoch_values[i])-numpy.median(self.last_values[i]))/abs(numpy.median(self.last_values[i]))
+                            value_gradient = (numpy.median(self.epoch_values[i])-numpy.median(self.last_values[i]))/(numpy.median(self.last_values[i]))
                         else:
                             value_gradient = 0
                         #transition["value_gradients"][i].append(value_gradient)
                         #print("value: ", numpy.mean(self.epoch_values[i]) , "last value: ",numpy.mean(self.last_values[i]))
 
-                        update_rate = 0.15 * self.mean_reward[i] 
+                        update_rate = 0.2 * self.mean_reward[i] 
                         
                         # if value change is too small
                         if abs(value_gradient) == numpy.inf:
@@ -202,7 +199,7 @@ class MATE(ActorCritic):
                         self.token_value[i] = self.token_value[i] + value_gradient * update_rate 
                         
                         # prevent negative token values
-                        self.token_value[i] = numpy.maximum(0.1, self.token_value[i])
+                        self.token_value[i] = numpy.maximum(0.0, self.token_value[i])
                         self.new_value[i] = True
                     
                     #reset episode parameters
