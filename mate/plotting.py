@@ -91,8 +91,8 @@ def plot_runs(params):
                 json_data = load_json(json_file)
                 if stats_label == "domain_values":
                     if metric_index is None:
-                        #values1 = numpy.sum(json_data["values"], axis=0)
-                        values1 , _= zip(*(json_data["value_gradients"]))
+                        values1 = numpy.sum(json_data["undiscounted_returns"], axis=0)
+                        #values1 , _= zip(*(json_data["value_gradients"]))
                         #values1 = [x[0] for x in values1]
                     else:  
                         values1 = [value[metric_index] for value in json_data[stats_label]]
