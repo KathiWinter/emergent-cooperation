@@ -133,6 +133,10 @@ def make(params):
         params["mate_mode"] = "td_error"
         params["token_mode"] = "epsilon-greedy"
         return mate.MATE(params)
+    if algorithm_name == "MATE-TD-UCB":
+        params["mate_mode"] = "td_error"
+        params["token_mode"] = "ucb"
+        return mate.MATE(params)
     if algorithm_name == "MATE-TD-DEFECT_COMPLETE":
         params["mate_mode"] = "td_error"
         params["defect_mode"] = mate.DEFECT_ALL
