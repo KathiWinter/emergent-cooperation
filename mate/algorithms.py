@@ -80,6 +80,10 @@ def make(params):
         params["mate_mode"] = "td_error"
         params["consensus_on"] = False
         return mate.MATE(params)
+    if algorithm_name == "MATE-TD-NOSYNC":
+        params["mate_mode"] = "td_error"
+        params["no_sync"] = True
+        return mate.MATE(params)
     if algorithm_name == "MATE-TD-0.1":
         params["mate_mode"] = "td_error"
         params["comm_failure_prob"] = 0.1
