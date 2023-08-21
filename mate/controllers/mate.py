@@ -49,6 +49,9 @@ class MATE(ActorCritic):
         self.new_value = [False for _ in range(self.nr_agents)]
         self.share_id = [0 for _ in range(self.nr_agents)]
         self.episode = 0
+        #No Sync Variant
+        self.no_sync = get_param_or_default(params, "no_sync", False)
+        self.application_value = get_param_or_default(params, "token_value", [0.1 for _ in range(self.nr_agents)])
  
  
     def can_rely_on(self, agent_id, reward, history, next_history):
@@ -123,7 +126,10 @@ class MATE(ActorCritic):
                         self.token_send_matrix[j][i] = self.token_shares[i][next_index]
                         next_index += 1
                     if self.can_rely_on(i, reward, history, next_history): # Analyze the "winners" of that step
-                        self.trust_request_matrix[j][i] += self.token_value[i]
+                        if self.no_sync:
+                            self.trust_request_matrix[j][i] += self.application_value[i]
+                        else:
+                            self.trust_request_matrix[j][i] += self.token_value[i]
                         transition["request_messages_sent"] += 1
             
         # 2. Send trust responses
@@ -143,9 +149,15 @@ class MATE(ActorCritic):
                     transition["rewards"][i] += numpy.max(trust_requests)
             if respond_enabled and len(neighborhood) > 0:
                 if self.can_rely_on(i, transition["rewards"][i], history, next_history):
-                    accept_trust = self.token_value[i]
+                    if self.no_sync:
+                        accept_trust = self.application_value[i]
+                    else:
+                        accept_trust = self.token_value[i]
                 else:
-                    accept_trust = -self.token_value[i]
+                    if self.no_sync:
+                        accept_trust = -self.application_value[i]
+                    else:
+                        accept_trust = -self.token_value[i]
                    
                 for j in neighborhood:
                     assert i != j
@@ -165,7 +177,10 @@ class MATE(ActorCritic):
             if receive_enabled and len(neighborhood) > 0:
                 if self.consensus_on:
                     if len(self.share_list[i]) > 0:
-                        self.token_value[i] = sum([x[0] for x in self.share_list[i]])/len(self.share_list[i])
+                        if self.no_sync:
+                            self.application_value[i] = sum([x[0] for x in self.share_list[i]])/len(self.share_list[i])
+                        else:
+                            self.token_value[i] = sum([x[0] for x in self.share_list[i]])/len(self.share_list[i])
                 if trust_responses.any():
                     filtered_trust_responses = [trust_responses[x] for x in neighborhood if abs(trust_responses[x]) > 0]
                     if len(filtered_trust_responses) > 0:
@@ -218,4 +233,5 @@ class MATE(ActorCritic):
             print(self.token_value)
             for i in range(self.nr_agents):
                 transition["token_values"][i].append(self.token_value[i])
+            transition["token_values"][2].append(self.application_value[i])
         return transition

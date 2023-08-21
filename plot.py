@@ -14,6 +14,7 @@ ALGORITHM_NAMES = {
     "MATE-TD-T1": "MATE - 1",
     "MATE-TD-T2": "MATE - 2",
     "MATE-TD-T4": "MATE - 4",
+    "MATE-TD-T8": "MATE - 8",
     "MATE-TD-T0.25": "MATE - 0.25",
     "MATE-TD-T0.5": "MATE - 0.5",
     "MATE-TD-Consensus": "MATE Consensus",
@@ -85,7 +86,7 @@ filename_pdf = filename_prefix + ".pdf"
 data_prefix_pattern = params["data_prefix_pattern"]
 
 if baseline_comparison:
-    algorithm_info = [("darkorange","MATE-TD_"), ("darkorange","MATE-TD-NC"), ("darkviolet","MATE-TD-Consensus"), ("sandybrown","MATE-TD-RANDOM"), ("darkorange","MATE-TD-T0.5"),  ("c","MATE-REWARD_"), ("magenta","Gifting-ZEROSUM_"), ("darkorange", "Gifting-BUDGET_"), ("k","IAC_"), ("darkblue", "Random_")]
+    algorithm_info = [("darkorange","MATE-TD_"), ("darkorange","MATE-TD-NC"), ("blue","MATE-TD-T1"), ("darkorange","MATE-TD-T8"), ("darkviolet","MATE-TD-Consensus"), ("sandybrown","MATE-TD-RANDOM"), ("darkorange","MATE-TD-T0.5"),  ("c","MATE-REWARD_"), ("magenta","Gifting-ZEROSUM_"), ("darkorange", "Gifting-BUDGET_"), ("k","IAC_"), ("darkblue", "Random_")]
 else:
     algorithm_info = [("b","MATE-TD_"), ("purple","MATE-TD-DEFECT_COMPLETE_"), ("darkgray","MATE-TD-DEFECT_REQUEST_"), ("c","MATE-TD-DEFECT_RESPONSE_"), ("r", "LIO_"), ("k","IAC_")]
 
