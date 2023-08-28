@@ -222,8 +222,9 @@ class MATE(ActorCritic):
                     self.epoch_values[i] = []
 
             if self.baseline_mode:
+                random_token = random.choice([0.25, 0.5, 1, 2, 4])
                 for i in range(self.nr_agents):
-                    self.token_value[i] = 1
+                    self.token_value[i] = random_token
 
             self.episode_step = 0   
             self.rewards = [[] for _ in range(self.nr_agents)] 

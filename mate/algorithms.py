@@ -104,6 +104,10 @@ def make(params):
         params["mate_mode"] = "td_error"
         params["baseline_mode"] = True
         return mate.MATE(params)
+    if algorithm_name == "MATE-TD-RANDOM":
+        params["mate_mode"] = "td_error"
+        params["baseline_mode"] = True
+        return mate.MATE(params)
     if algorithm_name == "MATE-TD-T2":
         params["mate_mode"] = "td_error"
         params["token_value"] = 2
