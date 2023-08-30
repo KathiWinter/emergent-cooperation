@@ -32,6 +32,7 @@ class MATE(ActorCritic):
         self.trust_response_matrix = numpy.zeros((self.nr_agents, self.nr_agents), dtype=float)
         self.defect_mode = get_param_or_default(params, "defect_mode", NO_DEFECT)
         self.baseline_mode = get_param_or_default(params, "baseline_mode", False)
+        self.fixed_token = get_param_or_default(params, "fixed_token", False)
         self.token_send_matrix = numpy.zeros((self.nr_agents, self.nr_agents), dtype=float)
         self.token_response_matrix = numpy.zeros((self.nr_agents, self.nr_agents), dtype=float)
         self.token_shares = [[] for _ in range(self.nr_agents)]
@@ -224,7 +225,10 @@ class MATE(ActorCritic):
             if self.baseline_mode:
                 random_token = random.choice([0.25, 0.5, 1, 2, 4])
                 for i in range(self.nr_agents):
-                    self.token_value[i] = random_token
+                    if self.fixed_token:
+                        self.token_value[i] = 1
+                    else:
+                        self.token_value[i] = random_token
 
             self.episode_step = 0   
             self.rewards = [[] for _ in range(self.nr_agents)] 
