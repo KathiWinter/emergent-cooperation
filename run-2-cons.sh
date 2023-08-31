@@ -3,3 +3,5 @@
 # 1. Performance Evaluation
 
 python train.py CoinGame-2 MATE-TD
+python train.py CoinGame-2 MATE-TD
+python train.py CoinGame-2 MATE-TD
