@@ -226,7 +226,7 @@ class MATE(ActorCritic):
                 random_token = random.choice([0.25, 0.5, 1, 2, 4])
                 for i in range(self.nr_agents):
                     if self.fixed_token:
-                        self.token_value[i] = 1
+                        self.token_value[i] = 8
                     else:
                         self.token_value[i] = random_token
 
