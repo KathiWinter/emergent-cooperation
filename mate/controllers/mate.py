@@ -197,8 +197,8 @@ class MATE(ActorCritic):
                     # derive token value from value function
                     if self.episode > 10:
                         if len(self.rewards[i]) > 0:
-                            self.mean_reward[i] = abs(numpy.max(self.rewards[i]))
-                
+                            self.mean_reward[i] = abs(numpy.min(self.rewards[i]))/2
+
                         if len(self.last_values[i]) > 0:
                             value_gradient = (numpy.median(self.epoch_values[i])-numpy.median(self.last_values[i]))/(numpy.median(self.last_values[i]))
                         else:
