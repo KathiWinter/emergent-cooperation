@@ -191,6 +191,68 @@ def make(params):
         params["token_value"] = 1.4
         return mate.MATE(params)
     
+    #Individual Decentralized Tokens for 2 agents only
+    if algorithm_name == "MATE-TD-T0.25-0.5":
+        params["mate_mode"] = "td_error"
+        params["fixed_token_mode"] = True
+        params["fixed_token"] = True
+        params["token_value"] = [0.25, 0.5]
+        return mate.MATE(params)
+    if algorithm_name == "MATE-TD-T0.25-1":
+        params["mate_mode"] = "td_error"
+        params["fixed_token_mode"] = True
+        params["fixed_token"] = True
+        params["token_value"] = [0.25, 1]
+        return mate.MATE(params)
+    if algorithm_name == "MATE-TD-T0.25-2":
+        params["mate_mode"] = "td_error"
+        params["fixed_token_mode"] = True
+        params["fixed_token"] = True
+        params["token_value"] = [0.25, 2]
+        return mate.MATE(params)
+    if algorithm_name == "MATE-TD-T0.25-4":
+        params["mate_mode"] = "td_error"
+        params["fixed_token_mode"] = True
+        params["fixed_token"] = True
+        params["token_value"] = [0.25, 4]
+        return mate.MATE(params)
+    if algorithm_name == "MATE-TD-T0.5-1":
+        params["mate_mode"] = "td_error"
+        params["fixed_token_mode"] = True
+        params["fixed_token"] = True
+        params["token_value"] = [0.5, 1]
+        return mate.MATE(params)
+    if algorithm_name == "MATE-TD-T0.5-2":
+        params["mate_mode"] = "td_error"
+        params["fixed_token_mode"] = True
+        params["fixed_token"] = True
+        params["token_value"] = [0.5, 2]
+        return mate.MATE(params)
+    if algorithm_name == "MATE-TD-T0.5-4":
+        params["mate_mode"] = "td_error"
+        params["fixed_token_mode"] = True
+        params["fixed_token"] = True
+        params["token_value"] = [0.5, 4]
+        return mate.MATE(params)
+    if algorithm_name == "MATE-TD-T1-2":
+        params["mate_mode"] = "td_error"
+        params["fixed_token_mode"] = True
+        params["fixed_token"] = True
+        params["token_value"] = [1, 2]
+        return mate.MATE(params)
+    if algorithm_name == "MATE-TD-T1-4":
+        params["mate_mode"] = "td_error"
+        params["fixed_token_mode"] = True
+        params["fixed_token"] = True
+        params["token_value"] = [1, 4]
+        return mate.MATE(params)
+    if algorithm_name == "MATE-TD-T2-4":
+        params["mate_mode"] = "td_error"
+        params["fixed_token_mode"] = True
+        params["fixed_token"] = True
+        params["token_value"] = [2, 4]
+        return mate.MATE(params)
+    
     #Random (episode-wise)
     if algorithm_name == "MATE-TD-RANDOM":
         params["mate_mode"] = "td_error"

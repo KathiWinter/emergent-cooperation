@@ -30,7 +30,7 @@ class MATE(ActorCritic):
         self.defect_mode = get_param_or_default(params, "defect_mode", NO_DEFECT)
         
         #INFO: Default is AutoMATE with Synchronized Consensus
-        self.token_value = [get_param_or_default(params, "token_value", 0.1) for _ in range(self.nr_agents)] #Initialization token
+        self.token_value = [get_param_or_default(params, "token_value", 0.1)[i] if isinstance(get_param_or_default(params, "token_value", 0.1), list) else get_param_or_default(params, "token_value", 0.1) for i in range(self.nr_agents)]
         self.no_sync = get_param_or_default(params, "no_sync", False) #True Sovereign Consensus
         self.common_token = get_param_or_default(params, "token_value", [0.1 for _ in range(self.nr_agents)]) #Shared token for Sovereign Consensus
         self.with_consensus = get_param_or_default(params, "consensus_on", True) #False for pure AutoMATE without consensus
