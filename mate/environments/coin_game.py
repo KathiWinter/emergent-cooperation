@@ -2,6 +2,8 @@ from mate.environments.environment import Environment
 import numpy
 import random
 
+from mate.utils import get_param_or_default
+
 MOVE_NORTH = 0
 MOVE_SOUTH = 1
 MOVE_WEST = 2
@@ -11,12 +13,13 @@ COIN_GAME_ACTIONS = [MOVE_NORTH, MOVE_SOUTH, MOVE_WEST, MOVE_EAST]
 
 class MovableAgent:
 
-    def __init__(self, agent_id, width, height, view_range):
+    def __init__(self, agent_id, width, height, view_range, reward_scale):
         self.agent_id = agent_id
         self.position = None
         self.width = width
         self.height = height
         self.view_range = view_range
+        self.reward_scale = reward_scale
 
     def move(self, action):
         x, y = self.position
@@ -64,6 +67,7 @@ class CoinGameEnvironment(Environment):
         self.width = params["width"]
         self.height = params["height"]
         self.view_range = params["view_range"]
+        self.reward_scale = get_param_or_default(params, "reward_scale", 1)
         self.observation_shape = (4, self.width, self.height)
         self.agents = [MovableAgent(i, self.width, self.height, self.view_range) for i in range(self.nr_agents)]
         self.positions = [(x, y) for x in range(self.width) for y in range(self.height)]
@@ -90,7 +94,7 @@ class CoinGameEnvironment(Environment):
             old_position = self.coin.position
             new_position = random.choice([pos for pos in self.positions if pos != old_position])
             self.coin.reset(new_position)
-        return rewards, infos
+        return rewards * self.reward_scale, infos
 
     def get_metric_indices(self, metric):
         if metric == "own_coin_prob":
@@ -142,5 +146,10 @@ def make(params):
         params["nr_agents"] = 6
         params["width"] = 7
         params["height"] = 7
+    if domain_name == "CoinGame-2x01":
+        params["nr_agents"] = 2
+        params["width"] = 3
+        params["height"] = 4
+        params["reward_scale"] = 0.1
     params["observation_dim"] = int(params["width"]*params["height"]*4)
     return CoinGameEnvironment(params)

@@ -256,7 +256,7 @@ def make(params):
     #Random (episode-wise)
     if algorithm_name == "MATE-TD-RANDOM":
         params["mate_mode"] = "td_error"
-        params["random_mode"] = True
+        params["random_mode"] = "epoch"
         return mate.MATE(params)
     
     #UCB 
@@ -268,6 +268,13 @@ def make(params):
         params["mate_mode"] = "td_error"
         params["ucb_mode"] = "decentralized"
         return mate.MATE(params)    
+    
+    #Reflecting 
+    if algorithm_name == "MATE-TD-REFLECTING":
+        params["mate_mode"] = "td_error"
+        params["architecture"] = "reflecting"
+        params["random_mode"] = "time_step"
+        return mate.MATE(params)        
     
     
     if algorithm_name == "MATE-TD-DEFECT_COMPLETE":

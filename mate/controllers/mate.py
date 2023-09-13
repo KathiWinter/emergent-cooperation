@@ -35,10 +35,11 @@ class MATE(ActorCritic):
         self.common_token = get_param_or_default(params, "token_value", [0.1 for _ in range(self.nr_agents)]) #Shared token for Sovereign Consensus
         self.with_consensus = get_param_or_default(params, "consensus_on", True) #False for pure AutoMATE without consensus
         #Baseline Variants:
-        self.random_mode = get_param_or_default(params, "random_mode", False) #random token (central from [0.25, 0.5, 1, 2, 4] per step)
+        self.random_mode = get_param_or_default(params, "random_mode", None) #random token (central from [0.25, 0.5, 1, 2, 4] per "epoch" or "time_step")
         self.fixed_token_mode = get_param_or_default(params, "fixed_token_mode", False) #fixed token
         #Other:
         self.ucb_mode = get_param_or_default(params, "ucb_mode", None) #UCB centralized / decentralized / None
+        self.architecture = get_param_or_default(params, "architecture", "holding")
         
         #MATE Basics
         self.trust_request_matrix = numpy.zeros((self.nr_agents, self.nr_agents), dtype=float)
@@ -112,11 +113,16 @@ class MATE(ActorCritic):
         self.trust_response_matrix[:] = 0
         self.epoch_returns += rewards
         
-       
+        # AutoMATE
         for i in range(self.nr_agents):
             for r in rewards:
                 if r != 0 and not r in self.rewards[i]:
                     self.rewards[i].append(r)
+                    
+        # Reflecting
+        if self.random_mode == "time_step":
+            for i in range(self.nr_agents):
+                self.token_value[i] = random.choice([0.25, 0.5, 1, 2, 4])
 
         # 1. Send trust requests
         defector_id = -1
@@ -185,12 +191,18 @@ class MATE(ActorCritic):
                     if self.no_sync: #Sovereign Consensus
                         accept_trust = self.common_token[i]
                     else: 
-                        accept_trust = self.token_value[i]
+                        if self.architecture == "reflecting":
+                            accept_trust = self.token_value[j]
+                        else:
+                            accept_trust = self.token_value[i]
                 else:
                     if self.no_sync: #Sovereign Consensus
                         accept_trust = -self.common_token[i]
                     else:
-                        accept_trust = -self.token_value[i]
+                        if self.architecture == "reflecting":
+                            accept_trust = -self.token_value[j]
+                        else:
+                            accept_trust = -self.token_value[i]
                    
                 for j in neighborhood:
                     assert i != j
@@ -234,16 +246,19 @@ class MATE(ActorCritic):
         elif self.ucb_mode == 'decentralized':
             for i in range(self.nr_agents):
                 self.epoch_returns[i] += rewards[i]
+        
 
         if done:
             
             if self.fixed_token_mode:
                 for i in range(self.nr_agents):
                     pass
-            elif self.random_mode:
+            elif self.random_mode == "epoch":
                 random_token = random.choice([0.25, 0.5, 1, 2, 4])
                 for i in range(self.nr_agents):
                     self.token_value[i] = random_token
+            elif self.architecture == "reflecting":
+                pass
             elif self.ucb_mode == 'centralized':
                 self.episode += 1
                 if self.episode % 10 == 1:
@@ -265,13 +280,13 @@ class MATE(ActorCritic):
                             max_upper_bound = upper_bound
                             self.best_value[0] = float(token)
                     
-                    self.last_token_value[0] = self.token_value[0]
+                    #self.last_token_value[0] = self.token_value[0]
                     for i in range(self.nr_agents):
                         self.token_value[i] = self.best_value[0]   
                         if self.episode-1 < len(self.token_range)*10:
                             index = int(self.episode / 10)
                             self.token_value[i] = self.token_range[index]
-                    
+                    self.last_token_value[0] = self.token_value[0]
                     self.epoch_returns[0] = 0 # reset
                              
             elif self.ucb_mode == 'decentralized':
