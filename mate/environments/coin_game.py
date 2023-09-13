@@ -13,13 +13,12 @@ COIN_GAME_ACTIONS = [MOVE_NORTH, MOVE_SOUTH, MOVE_WEST, MOVE_EAST]
 
 class MovableAgent:
 
-    def __init__(self, agent_id, width, height, view_range, reward_scale):
+    def __init__(self, agent_id, width, height, view_range):
         self.agent_id = agent_id
         self.position = None
         self.width = width
         self.height = height
         self.view_range = view_range
-        self.reward_scale = reward_scale
 
     def move(self, action):
         x, y = self.position
