@@ -102,22 +102,104 @@ def make(params):
         return mate.MATE(params)
     if algorithm_name == "MATE-TD-T1":
         params["mate_mode"] = "td_error"
-        params["baseline_mode"] = True
+        params["fixed_token_mode"] = True
         params["fixed_token"] = True
+        params["token_value"] = 1
         return mate.MATE(params)
-    if algorithm_name == "MATE-TD-T8":
+    
+    #Standard Token Range:
+    if algorithm_name == "MATE-TD-T0.25":
         params["mate_mode"] = "td_error"
-        params["baseline_mode"] = True
+        params["fixed_token_mode"] = True
         params["fixed_token"] = True
+        params["token_value"] = 0.25
         return mate.MATE(params)
-    if algorithm_name == "MATE-TD-RANDOM":
+    if algorithm_name == "MATE-TD-T0.5":
         params["mate_mode"] = "td_error"
-        params["baseline_mode"] = True
+        params["fixed_token_mode"] = True
+        params["fixed_token"] = True
+        params["token_value"] = 0.5
         return mate.MATE(params)
     if algorithm_name == "MATE-TD-T2":
         params["mate_mode"] = "td_error"
+        params["fixed_token_mode"] = True
+        params["fixed_token"] = True
         params["token_value"] = 2
         return mate.MATE(params)
+    if algorithm_name == "MATE-TD-T4":
+        params["mate_mode"] = "td_error"
+        params["fixed_token_mode"] = True
+        params["fixed_token"] = True
+        params["token_value"] = 4
+        return mate.MATE(params)
+    
+    #Extended Token Range:
+    if algorithm_name == "MATE-TD-T0.75":
+        params["mate_mode"] = "td_error"
+        params["fixed_token_mode"] = True
+        params["fixed_token"] = True
+        params["token_value"] = 0.75
+        return mate.MATE(params)
+    if algorithm_name == "MATE-TD-T1.5":
+        params["mate_mode"] = "td_error"
+        params["fixed_token_mode"] = True
+        params["fixed_token"] = True
+        params["token_value"] = 1.5
+        return mate.MATE(params)
+    if algorithm_name == "MATE-TD-T2.5":
+        params["mate_mode"] = "td_error"
+        params["fixed_token_mode"] = True
+        params["fixed_token"] = True
+        params["token_value"] = 2.5
+        return mate.MATE(params)    
+    if algorithm_name == "MATE-TD-T3":
+        params["mate_mode"] = "td_error"
+        params["fixed_token_mode"] = True
+        params["fixed_token"] = True
+        params["token_value"] = 3
+        return mate.MATE(params)    
+    if algorithm_name == "MATE-TD-T8":
+        params["mate_mode"] = "td_error"
+        params["fixed_token_mode"] = True
+        params["fixed_token"] = True
+        params["token_value"] = 8
+        return mate.MATE(params)
+    
+    #Coin Game - 6:
+    if algorithm_name == "MATE-TD-T1.2":
+        params["mate_mode"] = "td_error"
+        params["fixed_token_mode"] = True
+        params["fixed_token"] = True
+        params["token_value"] = 1.2
+        return mate.MATE(params)
+    if algorithm_name == "MATE-TD-T1.25":
+        params["mate_mode"] = "td_error"
+        params["fixed_token_mode"] = True
+        params["fixed_token"] = True
+        params["token_value"] = 1.25
+        return mate.MATE(params)
+    if algorithm_name == "MATE-TD-T4":
+        params["mate_mode"] = "td_error"
+        params["fixed_token_mode"] = True
+        params["fixed_token"] = True
+        params["token_value"] = 1.3
+        return mate.MATE(params)
+    if algorithm_name == "MATE-TD-T1.4":
+        params["mate_mode"] = "td_error"
+        params["fixed_token_mode"] = True
+        params["fixed_token"] = True
+        params["token_value"] = 1.4
+        return mate.MATE(params)
+    
+    #Random (episode-wise)
+    if algorithm_name == "MATE-TD-RANDOM":
+        params["mate_mode"] = "td_error"
+        params["random_mode"] = True
+        return mate.MATE(params)
+    
+    
+    
+    
     if algorithm_name == "MATE-TD-DEFECT_COMPLETE":
         params["mate_mode"] = "td_error"
         params["defect_mode"] = mate.DEFECT_ALL
@@ -130,4 +212,6 @@ def make(params):
         params["mate_mode"] = "td_error"
         params["defect_mode"] = mate.DEFECT_RECEIVE
         return mate.MATE(params)
+    
+    
     raise ValueError("Unknown algorithm '{}'".format(algorithm_name))
