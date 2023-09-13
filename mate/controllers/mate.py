@@ -280,13 +280,13 @@ class MATE(ActorCritic):
                             max_upper_bound = upper_bound
                             self.best_value[0] = float(token)
                     
-                    #self.last_token_value[0] = self.token_value[0]
+                    self.last_token_value[0] = self.token_value[0]
                     for i in range(self.nr_agents):
                         self.token_value[i] = self.best_value[0]   
                         if self.episode-1 < len(self.token_range)*10:
                             index = int(self.episode / 10)
                             self.token_value[i] = self.token_range[index]
-                    self.last_token_value[0] = self.token_value[0]
+          
                     self.epoch_returns[0] = 0 # reset
                              
             elif self.ucb_mode == 'decentralized':
@@ -315,8 +315,7 @@ class MATE(ActorCritic):
                         if self.episode-1 < len(self.token_range)*10: # first iterations of arms
                             index = int(self.episode / 10)
                             self.token_value[i] = self.token_range[index]
-                            
-                        
+                             
                         self.epoch_returns[i] = 0 # reset
                         
             # AutoMATE        
