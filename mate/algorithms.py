@@ -259,7 +259,15 @@ def make(params):
         params["random_mode"] = True
         return mate.MATE(params)
     
-    
+    #UCB 
+    if algorithm_name == "MATE-TD-UCB-CENT":
+        params["mate_mode"] = "td_error"
+        params["ucb_mode"] = "centralized"
+        return mate.MATE(params)
+    if algorithm_name == "MATE-TD-UCB-DEC":
+        params["mate_mode"] = "td_error"
+        params["ucb_mode"] = "decentralized"
+        return mate.MATE(params)    
     
     
     if algorithm_name == "MATE-TD-DEFECT_COMPLETE":
