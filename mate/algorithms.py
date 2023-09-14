@@ -1,3 +1,4 @@
+import random
 import mate.controllers.controller as controller
 import mate.controllers.actor_critic as actor_critic
 import mate.controllers.lola as lola
@@ -281,10 +282,12 @@ def make(params):
     if algorithm_name == "MATE-TD-UCB-CENT":
         params["mate_mode"] = "td_error"
         params["ucb_mode"] = "centralized"
+        params["token_value"] = random.choice([0.25, 0.5, 1.0, 2.0, 4.0])
         return mate.MATE(params)
     if algorithm_name == "MATE-TD-UCB-DEC":
         params["mate_mode"] = "td_error"
         params["ucb_mode"] = "decentralized"
+        params["token_value"] = random.choice([0.25, 0.5, 1.0, 2.0, 4.0])
         return mate.MATE(params)    
     
     

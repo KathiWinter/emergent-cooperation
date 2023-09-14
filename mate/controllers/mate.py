@@ -252,7 +252,7 @@ class MATE(ActorCritic):
                 random_token = random.choice([0.25, 0.5, 1, 2, 4])
                 for i in range(self.nr_agents):
                     self.token_value[i] = random_token
-            elif self.architecture == "reflecting" or self.architecture == "holding":
+            elif self.random_mode == "time_step":
                 pass
             elif self.ucb_mode == 'centralized':
                 self.episode += 1
@@ -282,7 +282,7 @@ class MATE(ActorCritic):
                             index = int(self.episode / 10)
                             self.token_value[i] = self.token_range[index]
                     self.last_token_value[0] = self.token_value[0]
-                    self.epoch_returns[0] = 0 # reset
+                    self.epoch_returns = numpy.zeros(self.nr_agents, dtype=float) # reset
                              
             elif self.ucb_mode == 'decentralized':
                 self.episode += 1
@@ -311,7 +311,7 @@ class MATE(ActorCritic):
                             index = int(self.episode / 10)
                             self.token_value[i] = self.token_range[index]
                         self.last_token_value[i] = self.token_value[i]       
-                        self.epoch_returns[i] = 0 # reset
+                    self.epoch_returns = numpy.zeros(self.nr_agents, dtype=float) # reset
                         
             # AutoMATE        
             else:
