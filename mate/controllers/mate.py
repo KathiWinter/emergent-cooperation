@@ -260,7 +260,7 @@ class MATE(ActorCritic):
                     max_upper_bound = -numpy.inf
                     if(str(self.last_token_value[0]) not in self.tokens_dict[0]):
                         self.tokens_dict[0][str(self.last_token_value[0])] = {'rewards': [],} 
-                    self.tokens_dict[0][str(self.last_token_value[0])]['rewards'].append([self.episode, self.epoch_returns[0]])
+                    self.tokens_dict[0][str(self.last_token_value[0])]['rewards'].append([self.episode, sum(self.epoch_returns)])
                          
                     for token, stats in self.tokens_dict[0].items():
                         if(len(stats['rewards']) > 0):
