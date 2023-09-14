@@ -258,6 +258,24 @@ def make(params):
         params["mate_mode"] = "td_error"
         params["random_mode"] = "epoch"
         return mate.MATE(params)
+    #Random (step-wise) centralized
+    if algorithm_name == "MATE-TD-RANDOM-TS":
+        params["mate_mode"] = "td_error"
+        params["architecture"] = "centralized"
+        params["random_mode"] = "time_step"
+        return mate.MATE(params)
+    #Reflecting 
+    if algorithm_name == "MATE-TD-REFLECTING":
+        params["mate_mode"] = "td_error"
+        params["architecture"] = "reflecting"
+        params["random_mode"] = "time_step"
+        return mate.MATE(params)     
+    #Holding
+    if algorithm_name == "MATE-TD-HOLDING":
+        params["mate_mode"] = "td_error"
+        params["architecture"] = "holding"
+        params["random_mode"] = "time_step"
+        return mate.MATE(params)  
     
     #UCB 
     if algorithm_name == "MATE-TD-UCB-CENT":
@@ -268,13 +286,6 @@ def make(params):
         params["mate_mode"] = "td_error"
         params["ucb_mode"] = "decentralized"
         return mate.MATE(params)    
-    
-    #Reflecting 
-    if algorithm_name == "MATE-TD-REFLECTING":
-        params["mate_mode"] = "td_error"
-        params["architecture"] = "reflecting"
-        params["random_mode"] = "time_step"
-        return mate.MATE(params)        
     
     
     if algorithm_name == "MATE-TD-DEFECT_COMPLETE":
