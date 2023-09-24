@@ -52,7 +52,7 @@ class MatrixGameEnvironment(Environment):
     def local_observation(self, agent_id):
         a1, a2 = self.last_joint_action
         obs = numpy.zeros(self.observation_dim)
-        if self.last_performed_action is not None:
+        if self.last_performed_action in [0,1]:#is not None:
             if agent_id == 0:
                 obs[a2] = 1
             else:
