@@ -69,7 +69,7 @@ class MATE(ActorCritic):
         transition = super(MATE, self).prepare_transition(joint_histories, joint_action, rewards, next_joint_histories, done, info)
         
         if self.token_mode == FIXED_TOKEN:
-            token_value = [self.token_value for _ in range(self.nr_agents)]  
+            token_value = [self.token_value0, self.token_value1]  
         elif self.token_mode == RANDOM_TOKEN:
             token_value = [random.choice([0.25, 0.5, 1, 2, 4]) for _ in range(self.nr_agents)]
 
