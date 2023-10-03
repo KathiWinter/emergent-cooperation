@@ -2,4 +2,4 @@
 
 # 1. Performance Evaluation
 
-python train.py Harvest-6 MATE-TD
+python train.py Harvest-12 MATE-TD
