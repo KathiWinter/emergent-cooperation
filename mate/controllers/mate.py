@@ -54,6 +54,7 @@ class MATE(ActorCritic):
         self.rewards = [[] for _ in range(self.nr_agents)]
         self.epoch_returns = numpy.zeros(self.nr_agents, dtype=float)
         self.update_rate = [[] for _ in range(self.nr_agents)]
+        self.time_step = 0
         self.episode = 0
         
         #Consensus Extensions
@@ -243,6 +244,7 @@ class MATE(ActorCritic):
                     if len(filtered_trust_responses) > 0:
                         transition["rewards"][i] += min(filtered_trust_responses)
         
+        self.time_step += 1
         if done:
             
             if self.fixed_token_mode:
@@ -317,8 +319,8 @@ class MATE(ActorCritic):
             else:
                 self.episode += 1
                 for i in range(self.nr_agents):
-                    self.epoch_values[i].append(self.values[i])
-                    transition["values"][i].append(numpy.mean(self.epoch_values[i]))
+                    self.epoch_values[i].append(self.values[i]/self.time_step)
+                    transition["values"][i].append(numpy.median(self.epoch_values[i]))
                     self.values[i] = 0
                 
                     if self.episode % 10 == 1:
@@ -367,4 +369,5 @@ class MATE(ActorCritic):
             # track common token additionally in sovereign consensus 
             if self.no_sync:
                 transition["token_values"][-1].append(self.common_token[i])
+            self.time_step = 0
         return transition
