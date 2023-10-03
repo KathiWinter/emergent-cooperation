@@ -20,7 +20,7 @@ The trained models are saved to the `output` folder, which can be changed in `se
 | AutoMATE without Consensus  | `MATE-TD-NC`       |
 
 
-### Other available algorithms
+### Other available MARL algorithms
 
 
 | Algorithm       | Label                  |
@@ -31,8 +31,18 @@ The trained models are saved to the `output` folder, which can be changed in `se
 | Gifting (Zero-Sum) | `Gifting-ZEROSUM`       |
 | Gifting (Budget)   | `Gifting-BUDGET`       |
 | LIO                | `LIO`       |
-| MATE w. UCB (Centralized)    | `MATE-TD-UCB-CENT`       |
-| MATE w. UCB (Decentralized)    | `MATE-TD-UCB-DEC`       |
+
+### Other available discrete token Algorithms based on MATE
+All algorithms sample from [0.25, 0.5, 1, 2, 4].
+
+| Algorithm       | Label                  | Description   |
+|-----------------|------------------------|-------------------------|
+| MATE w. UCB (Centralized)    | `MATE-TD-UCB-CENT`       | |
+| MATE w. UCB (Decentralized)    | `MATE-TD-UCB-DEC`       |  |
+| MATE Random (per epoch)    | `MATE-TD-RANDOM`       | Random Token at each epoch|
+| MATE Random (per time step)   | `MATE-TD-RANDOM-TS`   | Random Token at each time-step (centralized)|
+| MATE Random (Reflecting)    | `MATE-TD-REFLECTING`       | Random Token at each time-step (decentralized)|
+| MATE Random (Holding)    | `MATE-TD-HOLDING`       | Random Token at each time-step (decentralized)|
 
 
 ### Available domains
