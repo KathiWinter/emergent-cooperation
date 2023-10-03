@@ -8,6 +8,8 @@ To run training, the following command must be executed. Algorithm M (insert alg
 
 `python train.py D M`
 
+Example: `python train.py CoinGame-2 MATE-TD` to run AutoMATE w. Synchronized Consensus in the Coin Game 2.
+
 The trained models are saved to the `output` folder, which can be changed in `settings.py`.
 
 ### AutoMATE algorithms
