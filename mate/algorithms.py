@@ -1,6 +1,5 @@
 import mate.controllers.controller as controller
 import mate.controllers.actor_critic as actor_critic
-import mate.controllers.lola as lola
 import mate.controllers.gifting as gifting
 import mate.controllers.mate as mate
 import mate.controllers.lio as lio
@@ -252,7 +251,5 @@ def make(params):
         return controller.Controller(params)
     if algorithm_name == "IAC":
         return actor_critic.ActorCritic(params)
-    if algorithm_name == "LOLA":
-        return lola.LOLA(params)
-    
+
     raise ValueError("Unknown algorithm '{}'".format(algorithm_name))
