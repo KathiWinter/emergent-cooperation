@@ -57,6 +57,16 @@ The experiment parameters are specified in `settings.py` and can be adjusted.
 | `params["output_folder"]`       | "output"                |
 | `params["data_prefix_pattern"]` | {}-agents*domain-{}*{}" |
 
+## Dependencies
+
+To run the scripts in this repository, make sure you have Python installed along with the following packages:
+
+- numpy
+- torch
+
+To install these packages with pip, enter `pip install numpy torch` in your terminal.
+Note: The script also uses Python's standard libraries like sys, json, os, and copy, which are available with the Python installation.
+
 ## References
 
 - [1] T. Phan et al., ["Emergent Cooperation from Mutual Acknowledgment Exchange"](https://ifaamas.org/Proceedings/aamas2022/pdfs/p1047.pdf), in AAMAS 2022
