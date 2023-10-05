@@ -103,8 +103,7 @@ class Controller:
             "request_messages_sent": 0,
             "response_messages_sent": 0,
             "token_values": [[] for _ in range(self.nr_agents+1)],
-            "value_gradients": [[] for _ in range(self.nr_agents)],
-            "values": [[] for _ in range(self.nr_agents)]}
+            "median_values": [[] for _ in range(self.nr_agents)]}
 
     def update_step(self):
         pass

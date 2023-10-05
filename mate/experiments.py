@@ -10,8 +10,7 @@ def run_episode(env, controller, params, training_mode=True):
     request_messages_sent = 0
     response_messages_sent = 0
     token_values = []
-    value_gradients = []
-    values = []
+    median_values = []
     while not done:
         joint_action, joint_probs = controller.policy(observations)
         next_observations, rewards, done, info = env.step(joint_action)
@@ -22,8 +21,7 @@ def run_episode(env, controller, params, training_mode=True):
             request_messages_sent += transition["request_messages_sent"]
             response_messages_sent += transition["response_messages_sent"]
             token_values = transition["token_values"]
-            value_gradients = transition["value_gradients"]
-            values = transition["values"]
+            median_values = transition["median_values"]
         observations = next_observations
     return {
         "discounted_returns": env.discounted_returns,
@@ -35,8 +33,7 @@ def run_episode(env, controller, params, training_mode=True):
         "response_messages_sent": response_messages_sent*1.0/time_step,
         "messages_sent": (request_messages_sent+response_messages_sent)*1.0/time_step,
         "token_values": token_values,
-        "value_gradients": value_gradients,
-        "values": values
+        "median_values": median_values
     }
 
 def run_episodes(nr_episodes, env, controller, params, training_mode=True):
@@ -48,8 +45,7 @@ def run_episodes(nr_episodes, env, controller, params, training_mode=True):
     response_messages_sent = 0
     messages_sent = 0
     token_values = []
-    value_gradients = []
-    values = []
+    median_values = []
     for _ in range(nr_episodes):
         result = run_episode(env, controller, params, training_mode)
         for i, dR, uR in zip(range(env.nr_agents), result["discounted_returns"], result["undiscounted_returns"]):
@@ -61,8 +57,7 @@ def run_episodes(nr_episodes, env, controller, params, training_mode=True):
         response_messages_sent += (result["response_messages_sent"]*1.0)/nr_episodes
         messages_sent += (result["messages_sent"]*1.0)/nr_episodes
         token_values = result["token_values"]
-        value_gradients = result["value_gradients"]
-        values = result["values"]
+        median_values = result["median_values"]
     return {
         "discounted_returns": discounted_returns.tolist(),
         "undiscounted_returns": undiscounted_returns.tolist(),
@@ -72,8 +67,7 @@ def run_episodes(nr_episodes, env, controller, params, training_mode=True):
         "response_messages_sent": response_messages_sent,
         "messages_sent": messages_sent,
         "token_values": token_values,
-        "value_gradients": value_gradients,
-        "values": values
+        "median_values": median_values
     }
 
 def run_training(env, controller, params):
@@ -86,8 +80,7 @@ def run_training(env, controller, params):
     response_messages_sent = []
     messages_sent = []
     token_values =[]
-    value_gradients = []
-    values = []
+    median_values = []
     for i in range(params["nr_epochs"]):
         result = run_episodes(episodes_per_epoch, env, controller, params, training_mode=True)
         print("Finished epoch {} ({}, {}, {} agents):".format(i, params["algorithm_name"], params["domain_name"], params["nr_agents"]))
@@ -105,8 +98,7 @@ def run_training(env, controller, params):
         response_messages_sent.append(result["response_messages_sent"])
         messages_sent.append(result["messages_sent"])
         token_values.append(result["token_values"])
-        value_gradients.append(result["value_gradients"])
-        values.append(result["values"])
+        median_values.append(result["median_values"])
         sent = result["sent_gifts"]
         sent_gifts.append(sent)
         print("- Domain value:", domain_value)
@@ -124,8 +116,7 @@ def run_training(env, controller, params):
         "response_messages_sent": response_messages_sent,
         "messages_sent": messages_sent,
         "token_values": token_values,
-        "value_gradients": value_gradients,
-        "values": values
+        "median_values": median_values
     }
     if "directory" in params:
         data.save_json(join(params["directory"], "results.json"), result)
