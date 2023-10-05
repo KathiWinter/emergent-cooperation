@@ -1,4 +1,3 @@
-import random
 import mate.controllers.controller as controller
 import mate.controllers.actor_critic as actor_critic
 import mate.controllers.lola as lola
