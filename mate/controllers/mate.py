@@ -34,12 +34,7 @@ class MATE(ActorCritic):
         self.no_sync = get_param_or_default(params, "no_sync", False) #True Sovereign Consensus
         self.common_token = get_param_or_default(params, "token_value", [0.1 for _ in range(self.nr_agents)]) #Shared token for Sovereign Consensus
         self.with_consensus = get_param_or_default(params, "consensus_on", True) #False for pure AutoMATE without consensus
-        #Baseline Variants:
-        self.random_mode = get_param_or_default(params, "random_mode", None) #random token (central from [0.25, 0.5, 1, 2, 4] per "epoch" or "time_step")
         self.fixed_token_mode = get_param_or_default(params, "fixed_token_mode", False) #fixed token
-        #Other:
-        self.ucb_mode = get_param_or_default(params, "ucb_mode", None) #UCB centralized / decentralized / None
-        self.architecture = get_param_or_default(params, "architecture", "holding") #reflecting / centralized 
         
         #MATE Basics
         self.trust_request_matrix = numpy.zeros((self.nr_agents, self.nr_agents), dtype=float)
@@ -64,12 +59,6 @@ class MATE(ActorCritic):
         self.share_list = [[] for _ in range(self.nr_agents)]
         self.first_exchange = [False for _ in range(self.nr_agents)]
         self.share_id = [0 for _ in range(self.nr_agents)]
-        
-        #UCB 
-        self.best_value = [0 for _ in range(self.nr_agents)]
-        self.tokens_dict = [{} for _ in range(self.nr_agents)]
-        self.last_token_value = [random.choice([0.25, 0.5, 1.0, 2.0, 4.0]) for _ in range(self.nr_agents)]
-        self.token_range = get_param_or_default(params, "token_range", [0.25, 0.5, 1.0, 2.0, 4.0])
 
     def can_rely_on(self, agent_id, reward, history, next_history):
         if self.mate_mode == STATIC_MODE:
@@ -119,15 +108,6 @@ class MATE(ActorCritic):
                 if r != 0 and not r in self.rewards[i]:
                     self.rewards[i].append(r)
                     
-        #Random per time step (default is per epoch)
-        if self.random_mode == "time_step":
-            if self.architecture == "centralized":
-                xtr = random.choice([0.25, 0.5, 1, 2, 4])
-                for i in range(self.nr_agents):
-                    self.token_value[i] = xtr
-            else:
-                for i in range(self.nr_agents):
-                    self.token_value[i] = random.choice([0.25, 0.5, 1, 2, 4])
 
         # 1. Send trust requests
         defector_id = -1
@@ -196,18 +176,12 @@ class MATE(ActorCritic):
                     if self.no_sync: #Sovereign Consensus
                         accept_trust = self.common_token[i]
                     else: 
-                        if self.architecture == "reflecting":
-                            accept_trust = self.token_value[j]
-                        else:
                             accept_trust = self.token_value[i]
                 else:
                     if self.no_sync: #Sovereign Consensus
                         accept_trust = -self.common_token[i]
                     else:
-                        if self.architecture == "reflecting":
-                            accept_trust = -self.token_value[j]
-                        else:
-                            accept_trust = -self.token_value[i]
+                        accept_trust = -self.token_value[i]
                    
                 for j in neighborhood:
                     assert i != j
@@ -248,79 +222,14 @@ class MATE(ActorCritic):
         if done:
             
             if self.fixed_token_mode:
-                for i in range(self.nr_agents):
-                    pass
-            elif self.random_mode == "epoch":
-                random_token = random.choice([0.25, 0.5, 1, 2, 4])
-                for i in range(self.nr_agents):
-                    self.token_value[i] = random_token
-            elif self.random_mode == "time_step":
-                pass
-            elif self.ucb_mode == 'centralized':
-                self.episode += 1
-                if self.episode % 10 == 1:
-                    max_upper_bound = -numpy.inf
-                    if(str(self.last_token_value[0]) not in self.tokens_dict[0]):
-                        self.tokens_dict[0][str(self.last_token_value[0])] = {'rewards': [],} 
-                    self.tokens_dict[0][str(self.last_token_value[0])]['rewards'].append([self.episode, sum(self.epoch_returns)])
-                         
-                    for token, stats in self.tokens_dict[0].items():
-                        if(len(stats['rewards']) > 0):
-                            sum_rewards = sum([x[1] for x in stats['rewards']])
-                            mean_reward = sum_rewards / len(stats['rewards'])
-                            di = numpy.sqrt((2 * numpy.log(self.episode)) / len(stats['rewards']))
-                            upper_bound = mean_reward + di
-
-                        else:
-                            upper_bound = 1e400
-                        if(upper_bound > max_upper_bound):
-                            max_upper_bound = upper_bound
-                            self.best_value[0] = float(token)
-                    
-                    
-                    for i in range(self.nr_agents):
-                        self.token_value[i] = self.best_value[0]   
-                        if self.episode-1 < len(self.token_range)*10:
-                            index = int(self.episode / 10)
-                            self.token_value[i] = self.token_range[index]
-                    self.last_token_value[0] = self.token_value[0]
-                    self.epoch_returns = numpy.zeros(self.nr_agents, dtype=float) # reset
-                             
-            elif self.ucb_mode == 'decentralized':
-                self.episode += 1
-                if self.episode % 10 == 1:
-                    for i in range(self.nr_agents):
-                        max_upper_bound = -numpy.inf
-                        if(str(self.last_token_value[i]) not in self.tokens_dict[i]):
-                            self.tokens_dict[i][str(self.last_token_value[i])] = {'rewards': [],} 
-                        self.tokens_dict[i][str(self.last_token_value[i])]['rewards'].append([self.episode, self.epoch_returns[i]])
-
-                        for token, stats in self.tokens_dict[i].items():
-                            if(len(stats['rewards']) > 0):
-                                sum_rewards = sum([x[1] for x in stats['rewards']])
-                                mean_reward = sum_rewards / len(stats['rewards'])
-                                di = numpy.sqrt((2 * numpy.log(self.episode)) / len(stats['rewards']))
-                                upper_bound = mean_reward + di
-                            else:
-                                upper_bound = 1e400
-                            if(upper_bound > max_upper_bound):
-                                max_upper_bound = upper_bound
-                                self.best_value[i] = float(token)
-                        
-                        self.token_value[i] = self.best_value[i]   
-                        
-                        if self.episode-1 < len(self.token_range)*10: # first iterations of arms
-                            index = int(self.episode / 10)
-                            self.token_value[i] = self.token_range[index]
-                        self.last_token_value[i] = self.token_value[i]       
-                    self.epoch_returns = numpy.zeros(self.nr_agents, dtype=float) # reset
-                        
+                pass                     
             # AutoMATE        
             else:
                 self.episode += 1
                 for i in range(self.nr_agents):
                     self.epoch_values[i].append(self.values[i]/self.time_step)
-                    transition["values"][i].append(numpy.median(self.epoch_values[i]))
+                    transition["median_values"][i].append(numpy.mean(self.epoch_values[i]))
+
                     self.values[i] = 0
                 
                     if self.episode % 10 == 1:
@@ -330,13 +239,12 @@ class MATE(ActorCritic):
                                 self.min_reward[i] = abs(numpy.min(self.rewards[i]))
                                 if numpy.max(self.rewards[i]) < 0: # If no positive rewards exist
                                     self.min_reward[i] = abs(numpy.max(self.rewards[i]))
-
+     
                             # calculate s.t.e. gradient
                             if len(self.last_values[i]) > 0:
                                 value_gradient = (numpy.median(self.epoch_values[i])-numpy.median(self.last_values[i]))/(numpy.median(self.last_values[i]))
                             else: # no update if no last s.t.e.
                                 value_gradient = 0
-                            transition["value_gradients"][i].append(value_gradient)
                             
                             c = 0.1
                             update_rate = c * self.min_reward[i] 
@@ -360,8 +268,6 @@ class MATE(ActorCritic):
                 self.rewards = [[] for _ in range(self.nr_agents)] 
                 self.last_rewards_observed = [[] for _ in range(self.nr_agents)]
                 self.epoch_returns = numpy.zeros(self.nr_agents, dtype=float)
-            
-            print(self.token_value)
             
             for i in range(self.nr_agents):
                 transition["token_values"][i].append(self.token_value[i])
