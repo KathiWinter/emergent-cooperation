@@ -2,7 +2,10 @@ output/
 output/*
 output_plot/
 output_plot/*
-
+output_plot/
+output_plot/*
+plots/
+plots/*
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

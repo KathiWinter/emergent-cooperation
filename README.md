@@ -1,86 +1,87 @@
-# Emergent Cooperation
+# AutoMATE with Consensus
 
-## 1. Featured algorithms:
+AutoMATE is an extension of the Mutual Acknowledgment Token Exchange (MATE) [1] for decentralized and automatic token development. This repository is forked from the repository by Thomy Phan, which can be found at https://github.com/thomyphan/emergent-cooperation. We added the AutoMATE and Consensus extensions, as well as two Coin Game settings (6-agent and option for rescaled rewards). This Readme specifies only the relevant algorithms and domains for the AutoMATE extension.
 
-- Mutual Acknowledgment Token Exchange (MATE) [1]
+## How to run AutoMATE and Consensus
 
-## 2. Implemented domains
+To run training, the following command must be executed. Algorithm M (insert algorithm label here) runs in domain D (insert domain label here):
 
-All available domains are listed in the table below. The labels are used for the commands below (in 5. and 6.).
+`python train.py D M`
 
-| Domain   		| Label            | Description                                                       |
-|---------------|------------------|-------------------------------------------------------------------|
-| IPD           | `Matrix-IPD`     | Iterated Prisoner's Dilemma                 					   |
-| ISH           | `Matrix-ISH`     | Iterated Stag Hunt Game                       					   |
-| ISH           | `Matrix-ICG`     | Iterated Coordination Game                          			   |
-| ISH           | `Matrix-IMP`     | Iterated Matching Pennies Game                					   |
-| ISH           | `Matrix-IC`      | Iterated Chicken Game                         					   |
-| Coin[2]       | `CoinGame-2`     | 2-player version of Coin                   					   |
-| Coin[4]       | `CoinGame-4`     | 4-player version of Coin                   					   |
-| Harvest[6]    | `Harvest-6`      | Harvest domain with 6 agents 				                       |
-| Harvest[12]    | `Harvest-12`      | Harvest domain with 12 agents 				                       |
+Example: `python train.py CoinGame-2 MATE-TD` to run AutoMATE w. Synchronized Consensus in the Coin Game 2.
 
-## 3. Implemented MARL algorithms
+The available domains and algorithms are listed below. Algorithms marked with an asterisk (\*) are not used in the experiments but are left for reference and potential future work.
 
-The reported MARL algorithms are listed in the tables below. The labels are used for the command below (in 5.).
+The scripts `run-analysis.sh` and `run-evaluation.sh` include all commands to reproduce my experiments.
 
-| Algorithm       | Label                  |
-|-----------------|------------------------|
-| Random             | `Random`                |
-| Naive Learner      | `IAC`                   |
-| LOLA                | `LOLA`       |
-| Gifting (Zero-Sum) | `Gifting-ZEROSUM`       |
-| Gifting (Budget)   | `Gifting-BUDGET`       |
-| LIO                | `LIO`       |
-| MATE                | `MATE-TD`       |
-| MATE (Defect=Complete)                | `MATE-TD-DEFECT_COMPLETE`       |
-| MATE (Defect=Request)                | `MATE-TD-DEFECT_REQUEST`       |
-| MATE (Defect=Response)                | `MATE-TD-DEFECT_RESPONSE`       |
-| MATE (reward-based)     | `MATE-REWARD`       |
+The trained models are saved to the `output` folder, which will be automatically generated. The output directory can be changed in `settings.py`.
 
-MATE, LIO, and Gifting can be trained with a communication failure rate of `X` with a value of `0.1`, `0.2`, `0.4`, or `0.8`:
+### AutoMATE algorithms
 
-| Algorithm       | Label                  |
-|-----------------|------------------------|
- Gifting (Zero-Sum) | `Gifting-ZEROSUM-X`       |
-| Gifting (Budget)   | `Gifting-BUDGET-X`       |
-| LIO                | `LIO-X`       |
-| MATE                | `MATE-TD-X`       |
+| Algorithm                          | Label              |
+| ---------------------------------- | ------------------ |
+| AutoMATE w. Synchronized Consensus | `MATE-TD-SYNC`     |
+| AutoMATE w. Sovereign Consensus    | `MATE-TD-SOV`      |
+| AutoMATE without Consensus         | `MATE-TD-AUTOMATE` |
 
-## 4. Experiment parameters
+### Other available MARL algorithms
 
-The experiment parameters like the learning rate for training (`params["learning_rate"]`) or the number of episodes per epoch (`params["episodes_per_epoch"]`) are specified in `settings.py`. All other hyperparameters are set in the corresponding python modules in the package `mate/controllers`, where all final values as listed in the technical appendix are specified as default value.
+| Algorithm             | Label                                                 |
+| --------------------- | ----------------------------------------------------- |
+| MATE-TD (fixed token) | `MATE-TD-T{0.25, 0.5, 0.75, 1, 1.5, 2, 2.5, 3, 4, 8}` |
+| Naive Learner         | `IAC`                                                 |
+| Gifting (Zero-Sum)    | `Gifting-ZEROSUM`                                     |
+| Gifting (Budget)      | `Gifting-BUDGET`                                      |
+| LIO                   | `LIO`                                                 |
 
-All hyperparameters can be adjusted by setting their values via the `params` dictionary in `settings.py`.
+### Other available discrete token Algorithms based on MATE
 
-## 5. Training
+All algorithms sample from [0.25, 0.5, 1, 2, 4].
 
-To train a MARL algorithm `M` (see tables in 3.) in domain `D` (see table in 2.), run the following command:
+| Algorithm                   | Label                | Description                                    |
+| --------------------------- | -------------------- | ---------------------------------------------- |
+| MATE w. UCB (Centralized)   | `MATE-TD-UCB-CENT`   | UCB (centralized)(\*)                          |
+| MATE w. UCB (Decentralized) | `MATE-TD-UCB-DEC`    | UCB (decentralized)                            |
+| MATE Random (per epoch)     | `MATE-TD-RANDOM`     | Random Token at each epoch(\*)                 |
+| MATE Random (per time step) | `MATE-TD-RANDOM-TS`  | Random Token at each time-step (centralized)   |
+| MATE Random (Reflecting)    | `MATE-TD-REFLECTING` | Random Token at each time-step (decentralized) |
+| MATE Random (Holding)       | `MATE-TD-HOLDING`    | Random Token at each time-step (decentralized) |
 
-    python train.py D M
+### Available domains
 
-This command will create a folder with the name pattern `output/N-agents_domain-D_M_datetime` which contains the trained models (depending on the MARL algorithm).
+| Domain      | Label           | Description                                              |
+| ----------- | --------------- | -------------------------------------------------------- |
+| IPD         | `Matrix-IPD`    | Iterated Prisoner's Dilemma                              |
+| Coin[2]     | `CoinGame-2`    | 2-player version of Coin Game                            |
+| Coin[2] x01 | `CoinGame-2x01` | 2-player version of Coin Game with rewards of (0.1/-0.2) |
+| Coin[4]     | `CoinGame-4`    | 4-player version of Coin Game                            |
+| Coin[6]     | `CoinGame-6`    | 6-player version of Coin Game                            |
+| Harvest[6]  | `Harvest-6`     | Harvest domain with 6 agents                             |
 
-`run.sh` is an example script for running all settings as specified in the paper.
+## Experiment parameters
 
-## 6. Plotting
+The experiment parameters are specified in `settings.py` and can be adjusted.
 
-To generate learning plots for a particular domain `D` and evaluation mode `E` using metric `M` as presented in the paper, run the following command:
+| Parameter                       | Default Value           |
+| ------------------------------- | ----------------------- |
+| `params["episodes_per_epoch"]`  | 10                      |
+| `params["nr_epochs"]`           | 5000                    |
+| `params["nr_hidden_units"]`     | 64                      |
+| `params["clip_norm"]`           | 1                       |
+| `params["learning_rate"]`       | 0.001                   |
+| `params["output_folder"]`       | "output"                |
+| `params["data_prefix_pattern"]` | {}-agents*domain-{}*{}" |
 
-    python plot.py E D M
+## Dependencies
 
-The command will load and display all the data of completed training runs that are stored in the folder which is specified in `params["output_folder"]` (see `settings.py`).
+To run the scripts in this repository, make sure you have Python installed along with the following packages:
 
-The evaluation mode `E` should be set to `True` when comparing `MATE` with other PI algorithms and `False` when comparing `MATE` with defective variants.
+- numpy
+- torch
 
-To generate communication robustness plots for a particular domain `D` using metric `M` as presented in the paper, run the following command:
+To install these packages with pip, enter `pip install numpy torch` in your terminal.
+Note: The script also uses Python's standard libraries like sys, json, os, and copy, which are available with the Python installation.
 
-    python plot_resilience.py E D M
-
-`plot.sh` is an example script for plotting all experiments as presented in the paper.
-
-**Note:** All plots will be output as .png, .pdf, and .svg in the folder `plots/`.
-
-## 7. References
+## References
 
 - [1] T. Phan et al., ["Emergent Cooperation from Mutual Acknowledgment Exchange"](https://ifaamas.org/Proceedings/aamas2022/pdfs/p1047.pdf), in AAMAS 2022

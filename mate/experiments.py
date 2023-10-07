@@ -9,6 +9,9 @@ def run_episode(env, controller, params, training_mode=True):
     joint_probs_history = []
     request_messages_sent = 0
     response_messages_sent = 0
+    token_values = []
+    value_gradients = []
+    values = []
     while not done:
         joint_action, joint_probs = controller.policy(observations)
         next_observations, rewards, done, info = env.step(joint_action)
@@ -18,6 +21,9 @@ def run_episode(env, controller, params, training_mode=True):
             transition = controller.update(observations, joint_action, rewards, next_observations, done, info)
             request_messages_sent += transition["request_messages_sent"]
             response_messages_sent += transition["response_messages_sent"]
+            token_values = transition["token_values"]
+            value_gradients = transition["value_gradients"]
+            values = transition["values"]
         observations = next_observations
     return {
         "discounted_returns": env.discounted_returns,
@@ -27,7 +33,10 @@ def run_episode(env, controller, params, training_mode=True):
         "joint_probs_history": joint_probs_history,
         "request_messages_sent": request_messages_sent*1.0/time_step,
         "response_messages_sent": response_messages_sent*1.0/time_step,
-        "messages_sent": (request_messages_sent+response_messages_sent)*1.0/time_step
+        "messages_sent": (request_messages_sent+response_messages_sent)*1.0/time_step,
+        "token_values": token_values,
+        "value_gradients": value_gradients,
+        "values": values
     }
 
 def run_episodes(nr_episodes, env, controller, params, training_mode=True):
@@ -38,6 +47,9 @@ def run_episodes(nr_episodes, env, controller, params, training_mode=True):
     request_messages_sent = 0
     response_messages_sent = 0
     messages_sent = 0
+    token_values = []
+    value_gradients = []
+    values = []
     for _ in range(nr_episodes):
         result = run_episode(env, controller, params, training_mode)
         for i, dR, uR in zip(range(env.nr_agents), result["discounted_returns"], result["undiscounted_returns"]):
@@ -48,6 +60,9 @@ def run_episodes(nr_episodes, env, controller, params, training_mode=True):
         request_messages_sent += (result["request_messages_sent"]*1.0)/nr_episodes
         response_messages_sent += (result["response_messages_sent"]*1.0)/nr_episodes
         messages_sent += (result["messages_sent"]*1.0)/nr_episodes
+        token_values = result["token_values"]
+        value_gradients = result["value_gradients"]
+        values = result["values"]
     return {
         "discounted_returns": discounted_returns.tolist(),
         "undiscounted_returns": undiscounted_returns.tolist(),
@@ -55,7 +70,10 @@ def run_episodes(nr_episodes, env, controller, params, training_mode=True):
         "sent_gifts": sent_gifts.tolist(),
         "request_messages_sent": request_messages_sent,
         "response_messages_sent": response_messages_sent,
-        "messages_sent": messages_sent
+        "messages_sent": messages_sent,
+        "token_values": token_values,
+        "value_gradients": value_gradients,
+        "values": values
     }
 
 def run_training(env, controller, params):
@@ -67,6 +85,9 @@ def run_training(env, controller, params):
     request_messages_sent = []
     response_messages_sent = []
     messages_sent = []
+    token_values =[]
+    value_gradients = []
+    values = []
     for i in range(params["nr_epochs"]):
         result = run_episodes(episodes_per_epoch, env, controller, params, training_mode=True)
         print("Finished epoch {} ({}, {}, {} agents):".format(i, params["algorithm_name"], params["domain_name"], params["nr_agents"]))
@@ -83,6 +104,9 @@ def run_training(env, controller, params):
         request_messages_sent.append(result["request_messages_sent"])
         response_messages_sent.append(result["response_messages_sent"])
         messages_sent.append(result["messages_sent"])
+        token_values.append(result["token_values"])
+        value_gradients.append(result["value_gradients"])
+        values.append(result["values"])
         sent = result["sent_gifts"]
         sent_gifts.append(sent)
         print("- Domain value:", domain_value)
@@ -98,7 +122,10 @@ def run_training(env, controller, params):
         "sent_gifts": sent_gifts,
         "request_messages_sent": request_messages_sent,
         "response_messages_sent": response_messages_sent,
-        "messages_sent": messages_sent
+        "messages_sent": messages_sent,
+        "token_values": token_values,
+        "value_gradients": value_gradients,
+        "values": values
     }
     if "directory" in params:
         data.save_json(join(params["directory"], "results.json"), result)
