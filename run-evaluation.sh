@@ -7,21 +7,21 @@ python train.py Matrix-IPD MATE-TD-SOV
 python train.py Matrix-IPD MATE-TD-AUTOMATE
 python train.py Matrix-IPD MATE-TD-T1
 python train.py Matrix-IPD IAC
-python train.py Matrix-IPD UCB-DEC
+python train.py Matrix-IPD MATE-TD-UCB-DEC
 
 python train.py CoinGame-2 MATE-TD-SYNC
 python train.py CoinGame-2 MATE-TD-SOV
 python train.py CoinGame-2 MATE-TD-AUTOMATE
 python train.py CoinGame-2 MATE-TD-T1
 python train.py CoinGame-2 IAC
-python train.py CoinGame-2 UCB-DEC
+python train.py CoinGame-2 MATE-TD-UCB-DEC
 
 python train.py CoinGame-4 MATE-TD-SYNC
 python train.py CoinGame-4 MATE-TD-SOV
 python train.py CoinGame-4 MATE-TD-AUTOMATE
 python train.py CoinGame-4 MATE-TD-T1
 python train.py CoinGame-4 IAC
-python train.py CoinGame-4 UCB-DEC
+python train.py CoinGame-4 MATE-TD-UCB-DEC
 
 # 2. Performance Evaluation 
 
