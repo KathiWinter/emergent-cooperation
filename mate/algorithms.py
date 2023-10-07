@@ -12,8 +12,6 @@ def make(params):
     #Baselines
     if algorithm_name == "IAC":
         return actor_critic.ActorCritic(params)
-    if algorithm_name == "LOLA":
-        return lola.LOLA(params)
     if algorithm_name == "LIO":
         params["no_ppo"] = False
         return lio.LIO(params) 
