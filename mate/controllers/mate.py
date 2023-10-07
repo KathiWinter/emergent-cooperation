@@ -249,7 +249,7 @@ class MATE(ActorCritic):
             
             if self.fixed_token_mode:
                 for i in range(self.nr_agents):
-                    transition["values"][i].append(self.values[i]/150)
+                    transition["values"][i].append(self.values[i]/self.time_step)
                     self.values[i] = 0
                 self.time_step = 0
             elif self.random_mode == "epoch":
@@ -324,7 +324,6 @@ class MATE(ActorCritic):
                     self.epoch_values[i].append(self.values[i]/self.time_step)
                     transition["values"][i].append(numpy.mean(self.epoch_values[i]))
                     self.values[i] = 0
-                    self.epoch_values[i] = []
                     if self.episode % 10 == 1:
                         # derive token value from value function
                         if self.episode > 10:
@@ -362,8 +361,6 @@ class MATE(ActorCritic):
                 self.rewards = [[] for _ in range(self.nr_agents)] 
                 self.last_rewards_observed = [[] for _ in range(self.nr_agents)]
                 self.epoch_returns = numpy.zeros(self.nr_agents, dtype=float)
-            
-            print(self.token_value)
             
             for i in range(self.nr_agents):
                 transition["token_values"][i].append(self.token_value[i])

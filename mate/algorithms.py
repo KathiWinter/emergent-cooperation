@@ -8,71 +8,31 @@ import mate.controllers.lio as lio
 
 def make(params):
     algorithm_name = params["algorithm_name"]
-    if algorithm_name == "Random":
-        return controller.Controller(params)
+    
+    #Baselines
     if algorithm_name == "IAC":
         return actor_critic.ActorCritic(params)
     if algorithm_name == "LOLA":
         return lola.LOLA(params)
     if algorithm_name == "LIO":
         params["no_ppo"] = False
-        return lio.LIO(params)
-    if algorithm_name == "LIO-0.1":
-        params["no_ppo"] = False
-        params["comm_failure_prob"] = 0.1
-        return lio.LIO(params)
-    if algorithm_name == "LIO-0.2":
-        params["no_ppo"] = False
-        params["comm_failure_prob"] = 0.2
-        return lio.LIO(params)
-    if algorithm_name == "LIO-0.4":
-        params["no_ppo"] = False
-        params["comm_failure_prob"] = 0.4
-        return lio.LIO(params)
-    if algorithm_name == "LIO-0.8":
-        params["no_ppo"] = False
-        params["comm_failure_prob"] = 0.8
-        return lio.LIO(params)
+        return lio.LIO(params) 
     if algorithm_name == "Gifting-BUDGET":
-        params["gifting_mode"] = gifting.BUDGET_MODE
-        return gifting.Gifting(params)
-    if algorithm_name == "Gifting-BUDGET-0.1":
-        params["comm_failure_prob"] = 0.1
-        params["gifting_mode"] = gifting.BUDGET_MODE
-        return gifting.Gifting(params)
-    if algorithm_name == "Gifting-BUDGET-0.2":
-        params["comm_failure_prob"] = 0.2
-        params["gifting_mode"] = gifting.BUDGET_MODE
-        return gifting.Gifting(params)
-    if algorithm_name == "Gifting-BUDGET-0.4":
-        params["comm_failure_prob"] = 0.4
-        params["gifting_mode"] = gifting.BUDGET_MODE
-        return gifting.Gifting(params)
-    if algorithm_name == "Gifting-BUDGET-0.8":
-        params["comm_failure_prob"] = 0.8
         params["gifting_mode"] = gifting.BUDGET_MODE
         return gifting.Gifting(params)
     if algorithm_name == "Gifting-ZEROSUM":
         params["gifting_mode"] = gifting.ZERO_SUM_MODE
         return gifting.Gifting(params)
-    if algorithm_name == "Gifting-ZEROSUM-0.1":
-        params["comm_failure_prob"] = 0.1
-        params["gifting_mode"] = gifting.ZERO_SUM_MODE
-        return gifting.Gifting(params)
-    if algorithm_name == "Gifting-ZEROSUM-0.2":
-        params["comm_failure_prob"] = 0.2
-        params["gifting_mode"] = gifting.ZERO_SUM_MODE
-        return gifting.Gifting(params)
-    if algorithm_name == "Gifting-ZEROSUM-0.4":
-        params["comm_failure_prob"] = 0.4
-        params["gifting_mode"] = gifting.ZERO_SUM_MODE
-        return gifting.Gifting(params)
-    if algorithm_name == "Gifting-ZEROSUM-0.8":
-        params["comm_failure_prob"] = 0.8
-        params["gifting_mode"] = gifting.ZERO_SUM_MODE
-        return gifting.Gifting(params)
-    if algorithm_name == "MATE-REWARD":
+    
+    #MATE
+    if algorithm_name == "MATE-TD-T1":
+        params["mate_mode"] = "td_error"
+        params["fixed_token_mode"] = True
+        params["fixed_token"] = True
+        params["token_value"] = 1
         return mate.MATE(params)
+    
+    #AUTOMATE
     if algorithm_name == "MATE-TD-SYNC":
         params["mate_mode"] = "td_error"
         params["consensus_on"] = True
@@ -85,28 +45,7 @@ def make(params):
         params["mate_mode"] = "td_error"
         params["no_sync"] = True
         return mate.MATE(params)
-    if algorithm_name == "MATE-TD-0.1":
-        params["mate_mode"] = "td_error"
-        params["comm_failure_prob"] = 0.1
-        return mate.MATE(params)
-    if algorithm_name == "MATE-TD-0.2":
-        params["mate_mode"] = "td_error"
-        params["comm_failure_prob"] = 0.2
-        return mate.MATE(params)
-    if algorithm_name == "MATE-TD-0.4":
-        params["mate_mode"] = "td_error"
-        params["comm_failure_prob"] = 0.4
-        return mate.MATE(params)
-    if algorithm_name == "MATE-TD-0.8":
-        params["mate_mode"] = "td_error"
-        params["comm_failure_prob"] = 0.8
-        return mate.MATE(params)
-    if algorithm_name == "MATE-TD-T1":
-        params["mate_mode"] = "td_error"
-        params["fixed_token_mode"] = True
-        params["fixed_token"] = True
-        params["token_value"] = 1
-        return mate.MATE(params)
+    
     
     #Standard Token Range:
     if algorithm_name == "MATE-TD-T0.25":
@@ -171,32 +110,7 @@ def make(params):
         params["fixed_token"] = True
         params["token_value"] = 8
         return mate.MATE(params)
-    
-    #Coin Game - 6:
-    if algorithm_name == "MATE-TD-T1.2":
-        params["mate_mode"] = "td_error"
-        params["fixed_token_mode"] = True
-        params["fixed_token"] = True
-        params["token_value"] = 1.2
-        return mate.MATE(params)
-    if algorithm_name == "MATE-TD-T1.25":
-        params["mate_mode"] = "td_error"
-        params["fixed_token_mode"] = True
-        params["fixed_token"] = True
-        params["token_value"] = 1.25
-        return mate.MATE(params)
-    if algorithm_name == "MATE-TD-T4":
-        params["mate_mode"] = "td_error"
-        params["fixed_token_mode"] = True
-        params["fixed_token"] = True
-        params["token_value"] = 1.3
-        return mate.MATE(params)
-    if algorithm_name == "MATE-TD-T1.4":
-        params["mate_mode"] = "td_error"
-        params["fixed_token_mode"] = True
-        params["fixed_token"] = True
-        params["token_value"] = 1.4
-        return mate.MATE(params)
+
     
     #Individual Decentralized Tokens for 2 agents only
     if algorithm_name == "MATE-TD-T0.25-0.5":
@@ -296,7 +210,7 @@ def make(params):
         params["token_value"] = random.choice([0.25, 0.5, 1.0, 2.0, 4.0])
         return mate.MATE(params)    
     
-    
+    #Miscellaneous
     if algorithm_name == "MATE-TD-DEFECT_COMPLETE":
         params["mate_mode"] = "td_error"
         params["defect_mode"] = mate.DEFECT_ALL
@@ -310,5 +224,76 @@ def make(params):
         params["defect_mode"] = mate.DEFECT_RECEIVE
         return mate.MATE(params)
     
+    if algorithm_name == "Random":
+        return controller.Controller(params)
+    
+    if algorithm_name == "LIO-0.1":
+        params["no_ppo"] = False
+        params["comm_failure_prob"] = 0.1
+        return lio.LIO(params)
+    if algorithm_name == "LIO-0.2":
+        params["no_ppo"] = False
+        params["comm_failure_prob"] = 0.2
+        return lio.LIO(params)
+    if algorithm_name == "LIO-0.4":
+        params["no_ppo"] = False
+        params["comm_failure_prob"] = 0.4
+        return lio.LIO(params)
+    if algorithm_name == "LIO-0.8":
+        params["no_ppo"] = False
+        params["comm_failure_prob"] = 0.8
+        return lio.LIO(params)
+    
+    if algorithm_name == "Gifting-BUDGET-0.1":
+        params["comm_failure_prob"] = 0.1
+        params["gifting_mode"] = gifting.BUDGET_MODE
+        return gifting.Gifting(params)
+    if algorithm_name == "Gifting-BUDGET-0.2":
+        params["comm_failure_prob"] = 0.2
+        params["gifting_mode"] = gifting.BUDGET_MODE
+        return gifting.Gifting(params)
+    if algorithm_name == "Gifting-BUDGET-0.4":
+        params["comm_failure_prob"] = 0.4
+        params["gifting_mode"] = gifting.BUDGET_MODE
+        return gifting.Gifting(params)
+    if algorithm_name == "Gifting-BUDGET-0.8":
+        params["comm_failure_prob"] = 0.8
+        params["gifting_mode"] = gifting.BUDGET_MODE
+        return gifting.Gifting(params)
+    if algorithm_name == "Gifting-ZEROSUM-0.1":
+        params["comm_failure_prob"] = 0.1
+        params["gifting_mode"] = gifting.ZERO_SUM_MODE
+        return gifting.Gifting(params)
+    if algorithm_name == "Gifting-ZEROSUM-0.2":
+        params["comm_failure_prob"] = 0.2
+        params["gifting_mode"] = gifting.ZERO_SUM_MODE
+        return gifting.Gifting(params)
+    if algorithm_name == "Gifting-ZEROSUM-0.4":
+        params["comm_failure_prob"] = 0.4
+        params["gifting_mode"] = gifting.ZERO_SUM_MODE
+        return gifting.Gifting(params)
+    if algorithm_name == "Gifting-ZEROSUM-0.8":
+        params["comm_failure_prob"] = 0.8
+        params["gifting_mode"] = gifting.ZERO_SUM_MODE
+        return gifting.Gifting(params)
+    if algorithm_name == "MATE-REWARD":
+        return mate.MATE(params)
+    
+    if algorithm_name == "MATE-TD-0.1":
+        params["mate_mode"] = "td_error"
+        params["comm_failure_prob"] = 0.1
+        return mate.MATE(params)
+    if algorithm_name == "MATE-TD-0.2":
+        params["mate_mode"] = "td_error"
+        params["comm_failure_prob"] = 0.2
+        return mate.MATE(params)
+    if algorithm_name == "MATE-TD-0.4":
+        params["mate_mode"] = "td_error"
+        params["comm_failure_prob"] = 0.4
+        return mate.MATE(params)
+    if algorithm_name == "MATE-TD-0.8":
+        params["mate_mode"] = "td_error"
+        params["comm_failure_prob"] = 0.8
+        return mate.MATE(params)
     
     raise ValueError("Unknown algorithm '{}'".format(algorithm_name))

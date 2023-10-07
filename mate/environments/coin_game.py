@@ -148,7 +148,7 @@ def make(params):
     if domain_name == "CoinGame-2x01":
         params["nr_agents"] = 2
         params["width"] = 3
-        params["height"] = 4
+        params["height"] = 3
         params["reward_scale"] = 0.1
     params["observation_dim"] = int(params["width"]*params["height"]*4)
     return CoinGameEnvironment(params)
