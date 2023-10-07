@@ -30,7 +30,6 @@ The trained models are saved to the `output` folder, which will be automatically
 | --------------------- | ----------------------------------------------------- |
 | MATE-TD (fixed token) | `MATE-TD-T{0.25, 0.5, 0.75, 1, 1.5, 2, 2.5, 3, 4, 8}` |
 | Naive Learner         | `IAC`                                                 |
-| LOLA                  | `LOLA`(*)                                             |
 | Gifting (Zero-Sum)    | `Gifting-ZEROSUM`                                     |
 | Gifting (Budget)      | `Gifting-BUDGET`                                      |
 | LIO                   | `LIO`                                                 |
