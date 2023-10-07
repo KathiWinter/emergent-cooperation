@@ -1,7 +1,6 @@
 import random
 import mate.controllers.controller as controller
 import mate.controllers.actor_critic as actor_critic
-import mate.controllers.lola as lola
 import mate.controllers.gifting as gifting
 import mate.controllers.mate as mate
 import mate.controllers.lio as lio
