@@ -2,7 +2,7 @@
 
 AutoMATE is an extension of the Mutual Acknowledgment Token Exchange (MATE) [1] for decentralized and automatic token development. This repository is forked from the repository by Thomy Phan, which can be found at https://github.com/thomyphan/emergent-cooperation. We added the AutoMATE and Consensus extensions, as well as two Coin Game settings (6-agent and option for rescaled rewards). This Readme specifies only the relevant algorithms and domains for the AutoMATE extension.
 
-## 3. How to run AutoMATE and Consensus
+## How to run AutoMATE and Consensus
 
 To run training, the following command must be executed. Algorithm M (insert algorithm label here) runs in domain D (insert domain label here): 
 
@@ -20,9 +20,9 @@ The trained models are saved to the `output` folder, which will be automatically
 
 | Algorithm                          | Label            |
 | ---------------------------------- | ---------------- |
-| AutoMATE w. Synchronized Consensus | `MATE-TD`        |
-| AutoMATE w. Sovereign Consensus    | `MATE-TD-NOSYNC` |
-| AutoMATE without Consensus         | `MATE-TD-NC`     |
+| AutoMATE w. Synchronized Consensus | `MATE-TD-SYNC`   |
+| AutoMATE w. Sovereign Consensus    | `MATE-TD-SOV`    |
+| AutoMATE without Consensus         | `MATE-TD-AUTOMATE`|
 
 ### Other available MARL algorithms
 
@@ -44,7 +44,7 @@ All algorithms sample from [0.25, 0.5, 1, 2, 4].
 | MATE w. UCB (Centralized)   | `MATE-TD-UCB-CENT`   | UCB (centralized)(*)                           |
 | MATE w. UCB (Decentralized) | `MATE-TD-UCB-DEC`    | UCB (decentralized)                            |
 | MATE Random (per epoch)     | `MATE-TD-RANDOM`     | Random Token at each epoch(*)                  |
-| MATE Random (per time step) | `MATE-TD-RANDOM-TS`  | Random Token at each time-step (centralized)(*)|
+| MATE Random (per time step) | `MATE-TD-RANDOM-TS`  | Random Token at each time-step (centralized)   |
 | MATE Random (Reflecting)    | `MATE-TD-REFLECTING` | Random Token at each time-step (decentralized) |
 | MATE Random (Holding)       | `MATE-TD-HOLDING`    | Random Token at each time-step (decentralized) |
 
