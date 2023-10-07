@@ -10,7 +10,7 @@ To run training, the following command must be executed. Algorithm M (insert alg
 
 Example: `python train.py CoinGame-2 MATE-TD` to run AutoMATE w. Synchronized Consensus in the Coin Game 2.
 
-The available domains and algorithms are listed below. Domains and Algorithms marked with an asterisk (*) are not used in the experiments but are left for reference and potential future work.
+The available domains and algorithms are listed below. Algorithms marked with an asterisk (*) are not used in the experiments but are left for reference and potential future work.
 
 The scripts `run-analysis.sh` and `run-evaluation.sh` include all commands to reproduce my experiments.
 
@@ -57,7 +57,6 @@ All algorithms sample from [0.25, 0.5, 1, 2, 4].
 | Coin[4]     | `CoinGame-4`    | 4-player version of Coin Game                           |
 | Coin[6]     | `CoinGame-6`    | 6-player version of Coin Game                           |
 | Harvest[6]  | `Harvest-6`     | Harvest domain with 6 agents                        |
-| Harvest[12] | `Harvest-12`    | Harvest domain with 12 agents(*)                    |
 
 ## Experiment parameters
 
