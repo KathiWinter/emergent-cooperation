@@ -73,15 +73,15 @@ def make(params):
         return gifting.Gifting(params)
     if algorithm_name == "MATE-REWARD":
         return mate.MATE(params)
-    if algorithm_name == "MATE-TD":
+    if algorithm_name == "MATE-TD-SYNC":
         params["mate_mode"] = "td_error"
         params["consensus_on"] = True
         return mate.MATE(params)
-    if algorithm_name == "MATE-TD-NC":
+    if algorithm_name == "MATE-TD-AUTOMATE":
         params["mate_mode"] = "td_error"
         params["consensus_on"] = False
         return mate.MATE(params)
-    if algorithm_name == "MATE-TD-NOSYNC":
+    if algorithm_name == "MATE-TD-SOV":
         params["mate_mode"] = "td_error"
         params["no_sync"] = True
         return mate.MATE(params)
@@ -135,6 +135,12 @@ def make(params):
         return mate.MATE(params)
     
     #Extended Token Range:
+    if algorithm_name == "MATE-TD-T0":
+        params["mate_mode"] = "td_error"
+        params["fixed_token_mode"] = True
+        params["fixed_token"] = True
+        params["token_value"] = 0
+        return mate.MATE(params)
     if algorithm_name == "MATE-TD-T0.75":
         params["mate_mode"] = "td_error"
         params["fixed_token_mode"] = True
