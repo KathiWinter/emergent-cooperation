@@ -10,7 +10,7 @@ To run training, the following command must be executed. Algorithm M (insert alg
 
 Example: `python train.py CoinGame-2 MATE-TD` to run AutoMATE w. Synchronized Consensus in the Coin Game 2.
 
-The available domains and algorithms are listed below. Algorithms marked with an asterisk (\*) are not used in the experiments but are left for reference and potential future work.
+The available domains and algorithms are listed below. 
 
 The scripts `run-analysis.sh` and `run-evaluation.sh` include all commands to reproduce my experiments.
 
@@ -40,9 +40,9 @@ All algorithms sample from [0.25, 0.5, 1, 2, 4].
 
 | Algorithm                   | Label                | Description                                    |
 | --------------------------- | -------------------- | ---------------------------------------------- |
-| MATE w. UCB (Centralized)   | `MATE-TD-UCB-CENT`   | UCB (centralized)(\*)                          |
+| MATE w. UCB (Centralized)   | `MATE-TD-UCB-CENT`   | UCB (centralized)                              |
 | MATE w. UCB (Decentralized) | `MATE-TD-UCB-DEC`    | UCB (decentralized)                            |
-| MATE Random (per epoch)     | `MATE-TD-RANDOM`     | Random Token at each epoch(\*)                 |
+| MATE Random (per epoch)     | `MATE-TD-RANDOM`     | Random Token at each epoch (centralized)       |
 | MATE Random (per time step) | `MATE-TD-RANDOM-TS`  | Random Token at each time-step (centralized)   |
 | MATE Random (Reflecting)    | `MATE-TD-REFLECTING` | Random Token at each time-step (decentralized) |
 | MATE Random (Holding)       | `MATE-TD-HOLDING`    | Random Token at each time-step (decentralized) |
