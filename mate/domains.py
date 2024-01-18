@@ -1,6 +1,7 @@
 import mate.environments.matrix_games as matrix_games
 import mate.environments.coin_game as coin_game
 import mate.environments.harvest as harvest
+import mate.environments.meltingpot_wrapper as meltingpot_wrapper
 
 def make(params):
     domain_name = params["domain_name"]
@@ -13,4 +14,6 @@ def make(params):
     if domain_name.startswith("Harvest-"):
         params["R_max"] = 0.25
         return harvest.make(params)
+    if domain_name.startswith("Territory-"):
+        return meltingpot_wrapper.make(params)
     raise ValueError("Unknown domain '{}'".format(domain_name))

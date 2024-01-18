@@ -146,7 +146,6 @@ class MATE(ActorCritic):
         for i, reward, history, next_history in zip(range(self.nr_agents), original_rewards, joint_histories, next_joint_histories):
             self.values[i] += self.get_values(i, torch.tensor(numpy.array([history]), dtype=torch.float, device=self.device))[0].item()
             neighborhood = info["neighbor_agents"][i]
-            
             ### consensus extension
             if done and self.with_consensus and self.first_exchange[i]:
                 self.token_shares[i] = self.generate_token_shares(len(neighborhood), self.token_value[i])
@@ -208,7 +207,7 @@ class MATE(ActorCritic):
                             accept_trust = -self.token_value[j]
                         else:
                             accept_trust = -self.token_value[i]
-                   
+                
                 for j in neighborhood:
                     assert i != j
                     
