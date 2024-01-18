@@ -93,5 +93,5 @@ def make(params):
         params["history_length"] = 1
         params["view_range"] = [5,9,5,1]
         params["observation_dim"] = int(23232)
-        params["time_limit"]=100
+        params["time_limit"]=150
         return MeltingPot_Environment(params)
