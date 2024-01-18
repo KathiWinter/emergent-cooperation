@@ -13,7 +13,8 @@ class MeltingPot_Environment:
         self.config = meltingpot_substrate.get_config(substrate_name)
         self.env = meltingpot_substrate.build(substrate_name, roles=self.config.default_player_roles)
         self.actions = len(self.config.action_set)
-
+        self.observations = None
+        self.last_observations = None
         self.time_step = 0
         self.gamma = params["gamma"]
         self.time_limit = params["time_limit"]
@@ -44,16 +45,16 @@ class MeltingPot_Environment:
         self.undiscounted_returns[:] = 0
         timestep = self.env.reset()
         self.agents = self.possible_agents[:]
-
-        joint_observation = [numpy.array(utils.timestep_to_observations(timestep)[i]['RGB'][:][:]).reshape(self.observation_dim) for i in self.agents]
+ 
+        self.observations = [numpy.array(utils.timestep_to_observations(timestep)[i]['RGB'][:][:]).reshape(self.observation_dim) for i in self.agents]
         #joint_observation = utils.timestep_to_observations(timestep)
         #print("observations:",(utils.timestep_to_observations(timestep)))
-    
-        return joint_observation
+        return self.observations
      
 
     def step(self, action):
         self.time_step += 1
+        #print(action)
         actions = [action[index] for index, agent in enumerate(self.agents)]
         #print("actions:", actions)
         timestep = self.env.step(actions)
@@ -68,13 +69,15 @@ class MeltingPot_Environment:
         self.undiscounted_returns += rewards
         #print("time step:", (self.gamma**self.time_step)*(rewards))
         self.discounted_returns += [(self.gamma**self.time_step)*reward for reward in (rewards)]
-        observations = [numpy.array(utils.timestep_to_observations(timestep)[i]['RGB'][:][:]).reshape(self.observation_dim) for i in self.agents] 
-
-    
+        if(self.observations is not None):
+            self.last_observations = self.observations
+        self.observations = [numpy.array(utils.timestep_to_observations(timestep)[i]['RGB'][:][:]).reshape(self.observation_dim) for i in self.agents] 
+        if(self.last_observations is not None):
+            #print(self.last_observations[0] == self.observations[0])
+            pass
         done = self.is_done()
-        if done:
-            self.agents = []
-        return observations, rewards, done, info
+
+        return self.observations, rewards, done, info
 
     def is_done(self):
         return self.time_step >= self.time_limit
@@ -91,7 +94,6 @@ def make(params):
         params["nr_agents"] = 9
         params["gamma"] = 0.95
         params["history_length"] = 1
-        params["view_range"] = [5,9,5,1]
         params["observation_dim"] = int(23232)
         params["time_limit"]=150
         return MeltingPot_Environment(params)
