@@ -45,7 +45,7 @@ class MeltingPot_Environment:
         timestep = self.env.reset()
         self.agents = self.possible_agents[:]
 
-        joint_observation = [numpy.array(utils.timestep_to_observations(timestep)['player_0']['RGB'][:][:]).reshape(self.observation_dim) for i in range(self.nr_agents)]
+        joint_observation = [numpy.array(utils.timestep_to_observations(timestep)[i]['RGB'][:][:]).reshape(self.observation_dim) for i in self.agents]
         #joint_observation = utils.timestep_to_observations(timestep)
         #print("observations:",(utils.timestep_to_observations(timestep)))
     
@@ -93,5 +93,5 @@ def make(params):
         params["history_length"] = 1
         params["view_range"] = [5,9,5,1]
         params["observation_dim"] = int(23232)
-        params["time_limit"]=150
+        params["time_limit"]=100
         return MeltingPot_Environment(params)
